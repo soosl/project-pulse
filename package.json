@@ -1,0 +1,49 @@
+{
+  "name": "project-pulse",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev:front": "npm run dev --workspace=front",
+    "dev:back": "npm run dev --workspace=back",
+    "dev": "concurrently \"npm run dev:front\" \"npm run dev:back\"",
+    "build:back": "npm run build --workspace=back",
+    "build:front": "npm run build --workspace=front",
+    "build": "npm run build --workspaces",
+    "start:back": "npm run start --workspace=back",
+    "db:generate": "npm run db:generate --workspace=back",
+    "db:migrate": "npm run db:migrate --workspace=back",
+    "db:deploy": "npm run db:deploy --workspace=back",
+    "db:seed": "npm run db:seed --workspace=back",
+    "lint": "npm run lint --workspaces",
+    "format": "npm run format --workspaces"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/soosl/project-pulse.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/soosl/project-pulse/issues"
+  },
+  "homepage": "https://github.com/soosl/project-pulse#readme",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "devDependencies": {
+    "concurrently": "^10.0.5",
+    "eslint": "^10.10.0",
+    "prettier": "^3.9.6"
+  },
+  "allowScripts": {
+    "@prisma/engines@7.10.0": true,
+    "bcrypt@6.0.0": true,
+    "esbuild@0.28.2": true,
+    "prisma@7.10.0": true
+  }
+}
