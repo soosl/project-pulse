@@ -3,3 +3,4 @@ node_modules
 dist
 *.tsbuildinfo
 apps/api/src/generated
+apps/api/uploads

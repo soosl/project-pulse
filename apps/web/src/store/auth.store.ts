@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import axios from "axios";
 import { api } from "../lib/api";
-import type { User } from "@project-pulse/shared";
+import type { UpdateUser, User } from "@project-pulse/shared";
 
 interface AuthState {
   user: User | null;
@@ -11,6 +11,8 @@ interface AuthState {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   fetchUser: () => Promise<void>;
+  updateUser: (user: UpdateUser) => Promise<void>;
+  updateAvatar: (formData: FormData) => Promise<void>;
 }
 
 const ACCESS_TOKEN = "accessToken";
@@ -26,7 +28,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         email,
         password,
       });
-      localStorage.setItem(ACCESS_TOKEN, data.ACCESS_TOKEN);
+      console.log(data);
+      localStorage.setItem(ACCESS_TOKEN, data.accessToken);
       set({ user: data.user, isAuthenticated: true });
     } catch (error: unknown) {
       let errMessage = "Не удалось совершить вход";
@@ -46,7 +49,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         password,
         name,
       });
-      localStorage.setItem(ACCESS_TOKEN, data.ACCESS_TOKEN);
+      localStorage.setItem(ACCESS_TOKEN, data.accessToken);
       set({ user: data.user, isAuthenticated: true });
     } catch (error: unknown) {
       let errMessage = "Не удалось зарегистрироваться";
@@ -67,10 +70,40 @@ export const useAuthStore = create<AuthState>((set) => ({
   fetchUser: async () => {
     try {
       const { data } = await api.get("/auth/me");
+
       set({ user: data, isAuthenticated: true, isLoading: false });
-    } catch {
-      set({ isLoading: false, isAuthenticated: false });
-      localStorage.removeItem(ACCESS_TOKEN);
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 401) {
+        set({ isLoading: false });
+        localStorage.removeItem(ACCESS_TOKEN);
+      }
     }
   },
+
+  updateUser: async (user: UpdateUser) => {
+    try {
+      const { data } = await api.patch("/auth/profile", user);
+      set({ user: data, isAuthenticated: true, isLoading: false });
+    } catch (err) {
+      console.log(err);
+    }
+  },
+
+  updateAvatar: async (formdata: FormData) => {
+    try {
+      console.log(formdata);
+
+      const { data } = await api.patch("/auth/avatar", formdata, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      set({ user: data });
+    } catch (err) {
+      console.log(err);
+    }
+  },
+
+  // removeAvatar: async () => {},
 }));

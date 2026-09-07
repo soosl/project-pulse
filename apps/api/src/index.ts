@@ -10,6 +10,9 @@ import {
 import { authService } from "./services/auth.service.js";
 import { prisma } from "./lib/prisma.js";
 import { validateEnv } from "./lib/env.js";
+import path from "node:path";
+import { uploadAvatar } from "./middleware/upload.middleware.js";
+import { avatarService } from "./services/avatar.service.js";
 
 const app = express();
 
@@ -22,6 +25,16 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
+app.use(
+  "/uploads",
+  express.static(path.resolve("uploads"), {
+    fallthrough: false,
+    maxAge: "7d",
+    setHeaders: (res) => {
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    },
+  }),
+);
 
 app.get("/health", async (req, res) => {
   try {
@@ -88,10 +101,10 @@ app.get("/auth/me", authMiddleware, async (req, res) => {
 
 // Обновить профиль (защищённый маршрут)
 app.patch("/auth/profile", authMiddleware, async (req, res) => {
-  const { name, avatar } = req.body;
+  const { name } = req.body;
   const user = await prisma.user.update({
     where: { id: req.userId },
-    data: { name, avatar },
+    data: { name },
     select: { id: true, email: true, name: true, avatar: true },
   });
   res.json(user);
