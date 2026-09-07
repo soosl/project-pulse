@@ -2,7 +2,7 @@
   "name": "@project-pulse/shared",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "index.ts",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch"
@@ -10,5 +10,8 @@
   "type": "module",
   "dependencies": {
     "zod": "^4.5.4"
+  },
+  "exports": {
+    ".": "./index.ts"
   }
 }
