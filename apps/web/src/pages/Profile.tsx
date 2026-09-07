@@ -1,13 +1,8 @@
 import { Loader } from "../components/Loader";
 import { useAuthStore } from "../store/auth.store";
-import { useEffect } from "react";
 
 export const Profile = () => {
-  const { fetchUser, user } = useAuthStore();
-
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
+  const { user } = useAuthStore();
 
   if (!user) return <Loader />;
 

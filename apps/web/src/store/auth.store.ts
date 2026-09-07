@@ -13,6 +13,8 @@ interface AuthState {
   fetchUser: () => Promise<void>;
 }
 
+const ACCESS_TOKEN = "accessToken";
+
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
@@ -24,7 +26,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         email,
         password,
       });
-      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem(ACCESS_TOKEN, data.ACCESS_TOKEN);
       set({ user: data.user, isAuthenticated: true });
     } catch (error: unknown) {
       let errMessage = "Не удалось совершить вход";
@@ -44,7 +46,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         password,
         name,
       });
-      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem(ACCESS_TOKEN, data.ACCESS_TOKEN);
       set({ user: data.user, isAuthenticated: true });
     } catch (error: unknown) {
       let errMessage = "Не удалось зарегистрироваться";
@@ -58,7 +60,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
-    localStorage.removeItem("accessToken");
+    localStorage.removeItem(ACCESS_TOKEN);
     set({ user: null, isAuthenticated: false });
   },
 
@@ -67,7 +69,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data } = await api.get("/auth/me");
       set({ user: data, isAuthenticated: true, isLoading: false });
     } catch {
-      set({ isLoading: false });
+      set({ isLoading: false, isAuthenticated: false });
+      localStorage.removeItem(ACCESS_TOKEN);
     }
   },
 }));

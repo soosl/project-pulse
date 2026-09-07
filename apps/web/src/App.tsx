@@ -5,11 +5,20 @@ import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
 import { Profile } from "./pages/Profile";
 import { Dashboard } from "./pages/Dashboard";
+import { useLayoutEffect } from "react";
+import { Loader } from "./components/Loader";
 
 const queryClient = new QueryClient();
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, isLoading, fetchUser } = useAuthStore();
+
+  useLayoutEffect(() => {
+    fetchUser();
+  }, []);
+
+  if (isLoading) return <Loader />;
+
   return isAuthenticated ? children : <Navigate to="/login" />;
 }
 
