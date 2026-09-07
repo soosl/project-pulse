@@ -9,7 +9,7 @@
     "dev": "concurrently \"npm run dev:front\" \"npm run dev:back\"",
     "build:back": "npm run build --workspace=back",
     "build:front": "npm run build --workspace=front",
-    "build": "npm run build --workspaces",
+    "build": "npm run build --workspace=@project-pulse/shared && npm run build:back && npm run build:front",
     "start:back": "npm run start --workspace=back",
     "db:generate": "npm run db:generate --workspace=back",
     "db:migrate": "npm run db:migrate --workspace=back",
@@ -38,7 +38,8 @@
   "devDependencies": {
     "concurrently": "^10.0.5",
     "eslint": "^10.10.0",
-    "prettier": "^3.9.6"
+    "prettier": "^3.9.6",
+    "typescript": "~6.0.2"
   },
   "allowScripts": {
     "@prisma/engines@7.10.0": true,

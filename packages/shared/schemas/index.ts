@@ -1,3 +1,3 @@
-export * from "./user.schema";
-export * from "./project.schema";
-export * from "./task.schema";
+export * from "./user.schema.js";
+export * from "./project.schema.js";
+export * from "./task.schema.js";

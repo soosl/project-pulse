@@ -1,16 +1,16 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { PrismaPgClient } from "../lib/prisma";
+import { prisma } from "../lib/prisma.js";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 export const authService = {
   async register(email: string, password: string, name: string) {
-    const existing = await PrismaPgClient.user.findUnique({ where: { email } });
+    const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) throw new Error("User already exists");
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await PrismaPgClient.user.create({
+    const user = await prisma.user.create({
       data: { email, passwordHash, name, createdAt: new Date() },
     });
 
@@ -18,7 +18,7 @@ export const authService = {
   },
 
   async login(email: string, password: string) {
-    const user = await PrismaPgClient.user.findUnique({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) throw new Error("Invalid credentials");
 
     const valid = await bcrypt.compare(password, user.passwordHash);
