@@ -7,16 +7,16 @@ import {
   RegisterUserServerSchema,
   LoginUserSchema,
 } from "@project-pulse/shared";
-import "dotenv/config";
 import { authService } from "./services/auth.service.js";
 import { prisma } from "./lib/prisma.js";
+import { validateEnv } from "./lib/env.js";
 
 const app = express();
 
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+    origin: validateEnv("FRONTEND_URL"),
     credentials: true,
   }),
 );
@@ -43,8 +43,10 @@ app.post("/auth/register", async (req, res) => {
     const { email, password, name } = result.data;
     const tokens = await authService.register(email, password, name);
     res.status(201).json({ user: { email, name }, ...tokens });
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Registration failed";
+    res.status(400).json({ error: message });
   }
 });
 
@@ -63,8 +65,9 @@ app.post("/auth/login", async (req, res) => {
       select: { id: true, email: true, name: true, avatar: true },
     });
     res.json({ user, ...tokens });
-  } catch (error: any) {
-    res.status(401).json({ error: error.message });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Login failed";
+    res.status(401).json({ error: message });
   }
 });
 
@@ -94,5 +97,5 @@ app.patch("/auth/profile", authMiddleware, async (req, res) => {
   res.json(user);
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = validateEnv("PORT");
 app.listen(PORT, () => console.log(`Started on http://localhost:${PORT}`));

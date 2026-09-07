@@ -7,7 +7,7 @@ export const Profile = () => {
 
   useEffect(() => {
     fetchUser();
-  }, []);
+  }, [fetchUser]);
 
   if (!user) return <Loader />;
 

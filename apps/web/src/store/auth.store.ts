@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import axios from "axios";
 import { api } from "../lib/api";
 import type { User } from "@project-pulse/shared";
 
@@ -25,14 +26,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
       localStorage.setItem("accessToken", data.accessToken);
       set({ user: data.user, isAuthenticated: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       let errMessage = "Не удалось совершить вход";
 
-      if (error.status === 401) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
         errMessage = "Неверный логин или пароль";
       }
 
-      throw new Error(errMessage);
+      throw new Error(errMessage, { cause: error });
     }
   },
 
@@ -45,14 +46,14 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
       localStorage.setItem("accessToken", data.accessToken);
       set({ user: data.user, isAuthenticated: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       let errMessage = "Не удалось зарегистрироваться";
 
-      if (error.status === 400) {
+      if (axios.isAxiosError(error) && error.response?.status === 400) {
         errMessage = "Пользователь уже существует";
       }
 
-      throw new Error(errMessage);
+      throw new Error(errMessage, { cause: error });
     }
   },
 
