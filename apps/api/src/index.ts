@@ -6,6 +6,7 @@ import { authMiddleware } from "./middleware/auth.middleware.js";
 import {
   RegisterUserServerSchema,
   LoginUserSchema,
+  UpdateUserSchema,
 } from "@project-pulse/shared";
 import { authService } from "./services/auth.service.js";
 import { prisma } from "./lib/prisma.js";
@@ -101,14 +102,63 @@ app.get("/auth/me", authMiddleware, async (req, res) => {
 
 // Обновить профиль (защищённый маршрут)
 app.patch("/auth/profile", authMiddleware, async (req, res) => {
-  const { name } = req.body;
+  const result = UpdateUserSchema.safeParse(req.body);
+
+  if (!result.success) {
+    return res.status(400).json({
+      errors: result.error.issues,
+    });
+  }
+
   const user = await prisma.user.update({
     where: { id: req.userId },
-    data: { name },
-    select: { id: true, email: true, name: true, avatar: true },
+    data: {
+      name: result.data.name,
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      avatar: true,
+      createdAt: true,
+    },
   });
-  res.json(user);
+
+  return res.json(user);
 });
+
+app.patch(
+  "/auth/avatar",
+  authMiddleware,
+  uploadAvatar.single("avatar"),
+  async (req, res, next) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          error: "Файл аватара не передан",
+        });
+      }
+
+      const avatar = await avatarService.save(req.userId, req.file.buffer);
+
+      const user = await prisma.user.update({
+        where: { id: req.userId },
+        data: { avatar },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          avatar: true,
+          createdAt: true,
+        },
+      });
+
+      return res.json(user);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 const PORT = validateEnv("PORT");
 app.listen(PORT, () => console.log(`Started on http://localhost:${PORT}`));

@@ -68,15 +68,33 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   fetchUser: async () => {
+    const token = localStorage.getItem(ACCESS_TOKEN);
+
+    if (!token) {
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+      });
+      return;
+    }
+
     try {
       const { data } = await api.get("/auth/me");
 
-      set({ user: data, isAuthenticated: true, isLoading: false });
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.status === 401) {
-        set({ isLoading: false });
-        localStorage.removeItem(ACCESS_TOKEN);
-      }
+      set({
+        user: data,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } catch {
+      localStorage.removeItem(ACCESS_TOKEN);
+
+      set({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+      });
     }
   },
 
@@ -93,11 +111,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       console.log(formdata);
 
-      const { data } = await api.patch("/auth/avatar", formdata, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
+      const { data } = await api.patch("/auth/avatar", formdata);
 
       set({ user: data });
     } catch (err) {

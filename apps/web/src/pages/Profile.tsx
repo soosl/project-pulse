@@ -2,9 +2,9 @@ import { useForm } from "react-hook-form";
 import { Loader } from "../components/Loader";
 import { useAuthStore } from "../store/auth.store";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UpdateUserSchema } from "@project-pulse/shared";
+import { UpdateUserSchema, type UpdateUser } from "@project-pulse/shared";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -13,47 +13,43 @@ export const Profile = () => {
 
   const navigate = useNavigate();
 
-  const [userName, setUserName] = useState(user?.name || "");
-
   const avatarUrl = user?.avatar ? `${API_URL}${user.avatar}` : null;
-  const [userAvatar, setUserAvatar] = useState(avatarUrl);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(avatarUrl);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
-  } = useForm({
+  } = useForm<UpdateUser>({
     resolver: zodResolver(UpdateUserSchema),
+    values: {
+      name: user?.name ?? "",
+    },
   });
+
+  const handleUpdateUser = async (data: { name: string }) => {
+    if (avatarFile) {
+      const formData = new FormData();
+      formData.append("avatar", avatarFile);
+      await updateAvatar(formData);
+    }
+
+    await updateUser(data);
+  };
 
   const handleLogoutBtn = () => {
     logout();
     navigate("/login");
   };
 
-  const handleUpdateUser = async () => {
-    if (userAvatar) {
-      const imgResponse = await fetch(userAvatar);
-      const imgBlob = await imgResponse.blob();
-      const file = new File([imgBlob], "img", { type: imgBlob.type });
-      const formdata = new FormData();
-      formdata.append('file', file);
-
-      updateAvatar(formdata);
-    }
-
-    updateUser({ name: userName });
-  };
-
   const handleResetForm = () => {
-    setUserName(user?.name || "");
-    setUserAvatar(user?.avatar || "");
-  };
-
-  const handleChangeName = (e: ChangeEvent<HTMLInputElement>) => {
-    setUserName(e.target.value);
+    reset({ name: user?.name ?? "" });
+    setAvatarFile(null);
+    setAvatarPreview(user?.avatar || null);
   };
 
   const handleChangeAvatar = () => {
@@ -61,25 +57,27 @@ export const Profile = () => {
   };
 
   const handleResetAvatar = async () => {
-    setUserAvatar("");
+    setAvatarFile(null);
+    setAvatarPreview(user?.avatar || null);
   };
 
   useEffect(() => {
-    const uploadAvatar = async (e: Event) => {
-      const input = e.target as HTMLInputElement;
-      const file = input?.files?.[0];
+    const input = avatarInputRef.current;
+
+    if (!input) return;
+
+    const handleAvatarChange = (event: Event) => {
+      const input = event.target as HTMLInputElement;
+      const file = input.files?.[0];
 
       if (!file) return;
 
-      const objectURL = URL.createObjectURL(file);
-
-      setUserAvatar(objectURL);
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
     };
+    input.addEventListener("change", handleAvatarChange);
 
-    avatarInputRef.current?.addEventListener("change", uploadAvatar);
-
-    return () =>
-      avatarInputRef.current?.removeEventListener("change", uploadAvatar);
+    return () => input.removeEventListener("change", handleAvatarChange);
   }, []);
 
   if (!user) return <Loader />;
@@ -95,7 +93,15 @@ export const Profile = () => {
           <div className="px-6 py-8 sm:px-8 flex flex-col sm:flex-row items-center sm:items-start gap-6 border-b border-gray-100">
             <div className="flex-shrink-0">
               <div className="h-24 w-24 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white text-4xl font-bold shadow-md ring-4 ring-white">
-                {user.name.charAt(0).toUpperCase()}
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt={`Аватар пользователя ${user.name}`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  user.name.charAt(0).toUpperCase()
+                )}
               </div>
             </div>
             <div className="text-center sm:text-left flex-1">
@@ -133,8 +139,6 @@ export const Profile = () => {
                   {...register("name")}
                   type="text"
                   id="name"
-                  value={userName}
-                  onChange={handleChangeName}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
                 />
                 {errors.name && (
@@ -173,9 +177,9 @@ export const Profile = () => {
                   Аватар
                 </label>
                 <div className="flex flex-wrap items-center gap-4">
-                  {userAvatar ? (
+                  {avatarPreview ? (
                     <img
-                      src={userAvatar}
+                      src={avatarPreview}
                       alt={user.name}
                       className="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 overflow-hidden ring-2 ring-gray-200"
                     />

@@ -25,10 +25,17 @@ export const LoginUserSchema = z.object({
 
 export const UpdateUserSchema = z.object({
   name: z.string().min(2, "Имя должно содержать минимум 2 символа").max(50),
-  avatar: z.url().optional(),
 });
 
-export type User = z.infer<typeof UserBaseSchema>;
+export const UserSchema = z.object({
+  id: z.string(),
+  email: z.email(),
+  name: z.string(),
+  createdAt: z.iso.datetime(),
+  avatar: z.string().nullable(),
+});
+
+export type User = z.infer<typeof UserSchema>;
 export type RegisterUser = z.infer<typeof RegisterUserSchema>;
 export type RegisterUserServer = z.infer<typeof RegisterUserServerSchema>;
 export type LoginUser = z.infer<typeof LoginUserSchema>;
