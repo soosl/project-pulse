@@ -17,6 +17,9 @@ const generateAccessToken = (userId: string) => {
 
 export const authService = {
   async register(email: string, password: string, name: string) {
+    email = email.trim().toLowerCase();
+    name = name.trim();
+
     const existingUser = await prisma.user.findUnique({
       where: { email },
       select: { id: true },
@@ -47,6 +50,8 @@ export const authService = {
   },
 
   async login(email: string, password: string) {
+    email = email.trim().toLowerCase();
+
     const user = await prisma.user.findUnique({
       where: { email },
       select: {

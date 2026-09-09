@@ -28,56 +28,36 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   login: async (email, password) => {
-    try {
-      const response = await api.post<unknown>("/auth/login", {
-        email,
-        password,
-      });
+    const response = await api.post<unknown>("/auth/login", {
+      email,
+      password,
+    });
 
-      const data = AuthResponseSchema.parse(response.data);
+    const data = AuthResponseSchema.parse(response.data);
 
-      localStorage.setItem(ACCESS_TOKEN, data.accessToken);
+    localStorage.setItem(ACCESS_TOKEN, data.accessToken);
 
-      set({
-        user: data.user,
-        isAuthenticated: true,
-      });
-    } catch (error: unknown) {
-      let errMessage = "Не удалось совершить вход";
-
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        errMessage = "Неверный логин или пароль";
-      }
-
-      throw new Error(errMessage, { cause: error });
-    }
+    set({
+      user: data.user,
+      isAuthenticated: true,
+    });
   },
 
   register: async (email, password, name) => {
-    try {
-      const response = await api.post<unknown>("/auth/register", {
-        email,
-        password,
-        name,
-      });
+    const response = await api.post<unknown>("/auth/register", {
+      email,
+      password,
+      name,
+    });
 
-      const data = AuthResponseSchema.parse(response.data);
+    const data = AuthResponseSchema.parse(response.data);
 
-      localStorage.setItem(ACCESS_TOKEN, data.accessToken);
+    localStorage.setItem(ACCESS_TOKEN, data.accessToken);
 
-      set({
-        user: data.user,
-        isAuthenticated: true,
-      });
-    } catch (error: unknown) {
-      let errMessage = "Не удалось зарегистрироваться";
-
-      if (axios.isAxiosError(error) && error.response?.status === 400) {
-        errMessage = "Пользователь уже существует";
-      }
-
-      throw new Error(errMessage, { cause: error });
-    }
+    set({
+      user: data.user,
+      isAuthenticated: true,
+    });
   },
 
   logout: () => {
@@ -106,7 +86,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: true,
         isLoading: false,
       });
-    } catch {
+    } catch (error) {
       localStorage.removeItem(ACCESS_TOKEN);
 
       set({
@@ -114,35 +94,24 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: false,
         isLoading: false,
       });
+
+      if (axios.isAxiosError(error)) {
+        throw error;
+      }
     }
   },
 
-  updateUser: async (user: UpdateUser) => {
-    try {
-      const response = await api.patch<unknown>("/auth/profile", user);
-      const updatedUser = UserSchema.parse(response.data);
+  updateUser: async (user) => {
+    const response = await api.patch<unknown>("/auth/profile", user);
+    const updatedUser = UserSchema.parse(response.data);
 
-      set({
-        user: updatedUser,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-    } catch (err) {
-      console.log(err);
-    }
+    set({ user: updatedUser });
   },
 
   updateAvatar: async (formData: FormData) => {
-    try {
-      const response = await api.patch<unknown>("/auth/avatar", formData);
+    const response = await api.patch<unknown>("/auth/avatar", formData);
+    const updatedUser = UserSchema.parse(response.data);
 
-      const updatedUser = UserSchema.parse(response.data);
-
-      set({ user: updatedUser });
-    } catch (err) {
-      console.log(err);
-    }
+    set({ user: updatedUser });
   },
-
-  // removeAvatar: async () => {},
 }));

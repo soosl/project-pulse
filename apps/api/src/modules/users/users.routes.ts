@@ -19,9 +19,7 @@ usersRouter.get("/me", async (req, res) => {
   });
 
   if (!user) {
-    return res.status(404).json({
-      error: "User not found",
-    });
+    throw AppError.notFound("Пользователь не найден");
   }
 
   return res.json(toUserDto(user));

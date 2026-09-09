@@ -1,4 +1,5 @@
 import multer from "multer";
+import { AppError } from "../lib/app-error.js";
 
 const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -12,7 +13,13 @@ export const uploadAvatar = multer({
 
   fileFilter: (_req, file, callback) => {
     if (!allowedMimeTypes.has(file.mimetype)) {
-      callback(new Error("Допустимы только JPEG, PNG и WebP"));
+      callback(
+        AppError.badRequest(
+          "INVALID_AVATAR_TYPE",
+          "Допустимы только JPEG, PNG и WebP",
+        ),
+      );
+
       return;
     }
 

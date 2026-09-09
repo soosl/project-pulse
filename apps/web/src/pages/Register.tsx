@@ -5,6 +5,7 @@ import { useAuthStore } from "../store/auth.store";
 import { Link, useNavigate } from "react-router-dom";
 import type { RegisterUser } from "@project-pulse/shared";
 import { useState } from "react";
+import axios from "axios";
 
 export const Register = () => {
   const {
@@ -24,8 +25,8 @@ export const Register = () => {
 
       navigate("/profile");
     } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data.message);
       }
     }
   };

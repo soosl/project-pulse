@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { UpdateUserSchema, type UpdateUser } from "@project-pulse/shared";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -15,9 +16,11 @@ export const Profile = () => {
 
   const avatarUrl = user?.avatar ? `${API_URL}${user.avatar}` : null;
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(avatarUrl);
+  const [avatarPreview, setAvatarPreview] = useState(avatarUrl);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const [error, setError] = useState(null);
 
   const {
     register,
@@ -32,13 +35,19 @@ export const Profile = () => {
   });
 
   const handleUpdateUser = async (data: { name: string }) => {
-    if (avatarFile) {
-      const formData = new FormData();
-      formData.append("avatar", avatarFile);
-      await updateAvatar(formData);
-    }
+    try {
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append("avatar", avatarFile);
+        await updateAvatar(formData);
+      }
 
-    await updateUser(data);
+      await updateUser({ name: data.name });
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        setError(error.response?.data.message);
+      }
+    }
   };
 
   const handleLogoutBtn = () => {
@@ -211,7 +220,7 @@ export const Profile = () => {
                     <input
                       type="file"
                       id="file-input"
-                      accept="image/*"
+                      accept="image/jpeg,image/png,image/webp"
                       className="hidden"
                       ref={avatarInputRef}
                     />
@@ -245,6 +254,11 @@ export const Profile = () => {
                 Сохранить <span>→</span>
               </button>
             </div>
+            {error && (
+              <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                <span>⚠️</span> {error}
+              </p>
+            )}
           </form>
         </div>
 
