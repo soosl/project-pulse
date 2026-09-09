@@ -4,10 +4,9 @@ import { useAuthStore } from "../store/auth.store";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { UpdateUserSchema, type UpdateUser } from "@project-pulse/shared";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { getApiError } from "../lib/getApiError";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_URL } from "../lib/api";
 
 export const Profile = () => {
   const { user, logout, updateUser, updateAvatar, removeAvatar } =
@@ -22,7 +21,6 @@ export const Profile = () => {
     : null;
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState(avatarUrl);
-
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +47,7 @@ export const Profile = () => {
         await updateAvatar(formData);
       }
 
-      await updateUser({ name: data.name });
+      await updateUser({ name: data.name.trim() });
     } catch (error) {
       setError(getApiError(error, "Не удалось обновить данные пользователя"));
     }
@@ -71,7 +69,7 @@ export const Profile = () => {
     }
   };
 
-  const handleChangeAvatar = () => {
+  const handleChangeAvatarBtn = () => {
     avatarInputRef.current?.click();
   };
 
@@ -79,41 +77,33 @@ export const Profile = () => {
     try {
       setError(null);
 
+      await removeAvatar();
+
       setAvatarFile(null);
       setAvatarPreview(null);
 
-      await removeAvatar();
-    } catch (err) {
-      setError(getApiError(err, "Не удалось удалить аватар"));
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = "";
+      }
+    } catch (error) {
+      setError(getApiError(error, "Не удалось удалить аватар"));
     }
   };
 
-  useEffect(() => {
-    const input = avatarInputRef.current;
+  const handleChangeAvatarInput = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
 
-    if (!input) return;
+    if (!file) return;
 
-    const handleAvatarChange = (event: Event) => {
-      const input = event.target as HTMLInputElement;
-      const file = input.files?.[0];
+    setAvatarFile(file);
+    setAvatarPreview((prevAvatarPreview) => {
+      if (prevAvatarPreview) {
+        URL.revokeObjectURL(prevAvatarPreview);
+      }
 
-      if (!file) return;
-
-      setAvatarFile(file);
-      setAvatarPreview((prevAvatarPreview) => {
-        if (prevAvatarPreview) {
-          URL.revokeObjectURL(prevAvatarPreview);
-        }
-
-        return URL.createObjectURL(file);
-      });
-    };
-    input.addEventListener("change", handleAvatarChange);
-
-    return () => {
-      input.removeEventListener("change", handleAvatarChange);
-    };
-  }, []);
+      return URL.createObjectURL(file);
+    });
+  };
 
   if (!user) return <Loader />;
 
@@ -239,7 +229,7 @@ export const Profile = () => {
                     <button
                       type="button"
                       className="inline-flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
-                      onClick={handleChangeAvatar}
+                      onClick={handleChangeAvatarBtn}
                     >
                       🖼️ Загрузить
                     </button>
@@ -248,6 +238,7 @@ export const Profile = () => {
                       id="file-input"
                       accept="image/jpeg,image/png,image/webp"
                       className="hidden"
+                      onChange={handleChangeAvatarInput}
                       ref={avatarInputRef}
                     />
                     <button

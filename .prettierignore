@@ -4,4 +4,3 @@ coverage
 apps/api/src/generated
 apps/api/uploads
 package-lock.json
-package.json
