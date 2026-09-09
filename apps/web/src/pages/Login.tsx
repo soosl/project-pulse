@@ -5,7 +5,7 @@ import { useAuthStore } from "../store/auth.store";
 import { Link, useNavigate } from "react-router-dom";
 import type { LoginUser } from "@project-pulse/shared";
 import { useState } from "react";
-import axios from "axios";
+import { getApiError } from "../lib/getApiError";
 
 export const Login = () => {
   const {
@@ -24,9 +24,7 @@ export const Login = () => {
       await loginUser(data.email, data.password);
       navigate("/profile");
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        setError(err.response?.data.message);
-      }
+      setError(getApiError(err, "Не удалось войти"));
     }
   };
 

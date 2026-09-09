@@ -5,22 +5,27 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { UpdateUserSchema, type UpdateUser } from "@project-pulse/shared";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
+import { getApiError } from "../lib/getApiError";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export const Profile = () => {
-  const { user, logout, updateUser, updateAvatar } = useAuthStore();
+  const { user, logout, updateUser, updateAvatar, removeAvatar } =
+    useAuthStore();
 
   const navigate = useNavigate();
 
-  const avatarUrl = user?.avatar ? `${API_URL}${user.avatar}` : null;
+  const avatarUrl = user?.avatar
+    ? user.avatar.startsWith("http")
+      ? user.avatar
+      : `${API_URL}${user.avatar}`
+    : null;
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState(avatarUrl);
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -36,6 +41,8 @@ export const Profile = () => {
 
   const handleUpdateUser = async (data: { name: string }) => {
     try {
+      setError(null);
+
       if (avatarFile) {
         const formData = new FormData();
         formData.append("avatar", avatarFile);
@@ -44,9 +51,7 @@ export const Profile = () => {
 
       await updateUser({ name: data.name });
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        setError(error.response?.data.message);
-      }
+      setError(getApiError(error, "Не удалось обновить данные пользователя"));
     }
   };
 
@@ -57,17 +62,30 @@ export const Profile = () => {
 
   const handleResetForm = () => {
     reset({ name: user?.name ?? "" });
+
     setAvatarFile(null);
-    setAvatarPreview(user?.avatar || null);
+    setAvatarPreview(avatarUrl);
+
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = "";
+    }
   };
 
   const handleChangeAvatar = () => {
     avatarInputRef.current?.click();
   };
 
-  const handleResetAvatar = async () => {
-    setAvatarFile(null);
-    setAvatarPreview(user?.avatar || null);
+  const handleRemoveAvatar = async () => {
+    try {
+      setError(null);
+
+      setAvatarFile(null);
+      setAvatarPreview(null);
+
+      await removeAvatar();
+    } catch (err) {
+      setError(getApiError(err, "Не удалось удалить аватар"));
+    }
   };
 
   useEffect(() => {
@@ -82,11 +100,19 @@ export const Profile = () => {
       if (!file) return;
 
       setAvatarFile(file);
-      setAvatarPreview(URL.createObjectURL(file));
+      setAvatarPreview((prevAvatarPreview) => {
+        if (prevAvatarPreview) {
+          URL.revokeObjectURL(prevAvatarPreview);
+        }
+
+        return URL.createObjectURL(file);
+      });
     };
     input.addEventListener("change", handleAvatarChange);
 
-    return () => input.removeEventListener("change", handleAvatarChange);
+    return () => {
+      input.removeEventListener("change", handleAvatarChange);
+    };
   }, []);
 
   if (!user) return <Loader />;
@@ -227,7 +253,7 @@ export const Profile = () => {
                     <button
                       type="button"
                       className="text-sm text-red-600 hover:text-red-800 font-medium transition"
-                      onClick={handleResetAvatar}
+                      onClick={handleRemoveAvatar}
                     >
                       Удалить
                     </button>

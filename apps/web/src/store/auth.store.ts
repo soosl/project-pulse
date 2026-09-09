@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import axios from "axios";
 import { api } from "../lib/api";
 import {
   AuthResponseSchema,
@@ -18,6 +17,7 @@ interface AuthState {
   fetchUser: () => Promise<void>;
   updateUser: (user: UpdateUser) => Promise<void>;
   updateAvatar: (formData: FormData) => Promise<void>;
+  removeAvatar: () => Promise<void>;
 }
 
 const ACCESS_TOKEN = "accessToken";
@@ -86,7 +86,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: true,
         isLoading: false,
       });
-    } catch (error) {
+    } catch {
       localStorage.removeItem(ACCESS_TOKEN);
 
       set({
@@ -94,10 +94,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: false,
         isLoading: false,
       });
-
-      if (axios.isAxiosError(error)) {
-        throw error;
-      }
     }
   },
 
@@ -110,6 +106,13 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   updateAvatar: async (formData: FormData) => {
     const response = await api.patch<unknown>("/auth/avatar", formData);
+    const updatedUser = UserSchema.parse(response.data);
+
+    set({ user: updatedUser });
+  },
+
+  removeAvatar: async () => {
+    const response = await api.delete("/auth/avatar");
     const updatedUser = UserSchema.parse(response.data);
 
     set({ user: updatedUser });

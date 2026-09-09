@@ -26,18 +26,12 @@ usersRouter.get("/me", async (req, res) => {
 });
 
 usersRouter.patch("/profile", async (req, res) => {
-  const result = UpdateUserSchema.safeParse(req.body);
-
-  if (!result.success) {
-    return res.status(400).json({
-      errors: result.error.issues,
-    });
-  }
+  const input = UpdateUserSchema.parse(req.body);
 
   const user = await prisma.user.update({
     where: { id: req.userId },
     data: {
-      name: result.data.name,
+      name: input.name,
     },
     select: publicUserSelect,
   });
@@ -68,3 +62,35 @@ usersRouter.patch(
     return res.json(toUserDto(user));
   },
 );
+
+usersRouter.delete("/avatar", async (req, res) => {
+  const existingUser = await prisma.user.findUnique({
+    where: {
+      id: req.userId,
+    },
+    select: {
+      id: true,
+      avatar: true,
+    },
+  });
+
+  if (!existingUser) {
+    throw AppError.notFound("Пользователь не найден");
+  }
+
+  if (existingUser.avatar) {
+    await avatarService.remove(req.userId);
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: {
+      id: req.userId,
+    },
+    data: {
+      avatar: null,
+    },
+    select: publicUserSelect,
+  });
+
+  return res.json(toUserDto(updatedUser));
+});
