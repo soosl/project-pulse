@@ -4,17 +4,17 @@
     "target": "ES2022",
     "lib": ["ES2022"],
 
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
 
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "dist",
 
-    "types": ["node"],
-
+    "declaration": true,
+    "declarationMap": true,
     "sourceMap": true,
     "noEmitOnError": true
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts"],
+  "include": ["index.ts", "schemas/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }

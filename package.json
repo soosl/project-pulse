@@ -7,16 +7,22 @@
     "dev:front": "npm run dev --workspace=front",
     "dev:back": "npm run dev --workspace=back",
     "dev": "concurrently \"npm run dev:front\" \"npm run dev:back\"",
+    "build:shared": "npm run build --workspace=@project-pulse/shared",
     "build:back": "npm run build --workspace=back",
     "build:front": "npm run build --workspace=front",
-    "build": "npm run build --workspaces",
+    "build": "npm run build:shared && npm run build:back && npm run build:front",
     "start:back": "npm run start --workspace=back",
+    "lint": "eslint apps packages",
+    "lint:fix": "eslint apps packages --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "db:generate": "npm run db:generate --workspace=back",
     "db:migrate": "npm run db:migrate --workspace=back",
     "db:deploy": "npm run db:deploy --workspace=back",
     "db:seed": "npm run db:seed --workspace=back",
-    "lint": "npm run lint --workspaces",
-    "format": "npm run format --workspaces"
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f"
   },
   "repository": {
     "type": "git",
@@ -36,9 +42,15 @@
     "packages/*"
   ],
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint-plugin-react-refresh": "^0.5.4",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.11.0",
+    "typescript-eslint": "^8.67.0",
     "concurrently": "^10.0.5",
     "eslint": "^10.10.0",
-    "prettier": "^3.9.6"
+    "prettier": "^3.9.6",
+    "typescript": "~6.0.2"
   },
   "allowScripts": {
     "@prisma/engines@7.10.0": true,
