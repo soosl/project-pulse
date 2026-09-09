@@ -1,13 +1,15 @@
 import { z } from "zod";
 
-export const UserBaseSchema = z.object({
-  email: z.email("Некорректный email"),
-  name: z.string().min(2, "Имя должно содержать минимум 2 символа").max(50),
-  createdAt: z.date().optional(),
-  avatar: z.url().optional(),
-});
+const EmailSchema = z.email("Некорректный email");
 
-export const RegisterUserServerSchema = UserBaseSchema.extend({
+const NameSchema = z
+  .string()
+  .min(2, "Имя должно содержать минимум 2 символа")
+  .max(50);
+
+export const RegisterUserServerSchema = z.object({
+  email: EmailSchema,
+  name: NameSchema,
   password: z.string().min(6, "Пароль должен быть минимум 6 символов"),
 });
 
@@ -19,23 +21,29 @@ export const RegisterUserSchema = RegisterUserServerSchema.extend({
 });
 
 export const LoginUserSchema = z.object({
-  email: z.email("Некорректный email"),
+  email: EmailSchema,
   password: z.string().min(6, "Пароль должен быть минимум 6 символов"),
 });
 
 export const UpdateUserSchema = z.object({
-  name: z.string().min(2, "Имя должно содержать минимум 2 символа").max(50),
+  name: NameSchema,
 });
 
 export const UserSchema = z.object({
   id: z.string(),
-  email: z.email(),
+  email: EmailSchema,
   name: z.string(),
-  createdAt: z.iso.datetime(),
   avatar: z.string().nullable(),
+  createdAt: z.iso.datetime(),
+});
+
+export const AuthResponseSchema = z.object({
+  user: UserSchema,
+  accessToken: z.string(),
 });
 
 export type User = z.infer<typeof UserSchema>;
+export type AuthResponse = z.infer<typeof AuthResponseSchema>;
 export type RegisterUser = z.infer<typeof RegisterUserSchema>;
 export type RegisterUserServer = z.infer<typeof RegisterUserServerSchema>;
 export type LoginUser = z.infer<typeof LoginUserSchema>;

@@ -1,7 +1,12 @@
 import { create } from "zustand";
 import axios from "axios";
 import { api } from "../lib/api";
-import type { UpdateUser, User } from "@project-pulse/shared";
+import {
+  AuthResponseSchema,
+  UserSchema,
+  type UpdateUser,
+  type User,
+} from "@project-pulse/shared";
 
 interface AuthState {
   user: User | null;
@@ -24,13 +29,19 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async (email, password) => {
     try {
-      const { data } = await api.post("/auth/login", {
+      const response = await api.post<unknown>("/auth/login", {
         email,
         password,
       });
-      console.log(data);
+
+      const data = AuthResponseSchema.parse(response.data);
+
       localStorage.setItem(ACCESS_TOKEN, data.accessToken);
-      set({ user: data.user, isAuthenticated: true });
+
+      set({
+        user: data.user,
+        isAuthenticated: true,
+      });
     } catch (error: unknown) {
       let errMessage = "Не удалось совершить вход";
 
@@ -44,13 +55,20 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   register: async (email, password, name) => {
     try {
-      const { data } = await api.post("/auth/register", {
+      const response = await api.post<unknown>("/auth/register", {
         email,
         password,
         name,
       });
+
+      const data = AuthResponseSchema.parse(response.data);
+
       localStorage.setItem(ACCESS_TOKEN, data.accessToken);
-      set({ user: data.user, isAuthenticated: true });
+
+      set({
+        user: data.user,
+        isAuthenticated: true,
+      });
     } catch (error: unknown) {
       let errMessage = "Не удалось зарегистрироваться";
 
@@ -80,10 +98,11 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     try {
-      const { data } = await api.get("/auth/me");
+      const response = await api.get<unknown>("/auth/me");
+      const user = UserSchema.parse(response.data);
 
       set({
-        user: data,
+        user,
         isAuthenticated: true,
         isLoading: false,
       });
@@ -100,20 +119,26 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   updateUser: async (user: UpdateUser) => {
     try {
-      const { data } = await api.patch("/auth/profile", user);
-      set({ user: data, isAuthenticated: true, isLoading: false });
+      const response = await api.patch<unknown>("/auth/profile", user);
+      const updatedUser = UserSchema.parse(response.data);
+
+      set({
+        user: updatedUser,
+        isAuthenticated: true,
+        isLoading: false,
+      });
     } catch (err) {
       console.log(err);
     }
   },
 
-  updateAvatar: async (formdata: FormData) => {
+  updateAvatar: async (formData: FormData) => {
     try {
-      console.log(formdata);
+      const response = await api.patch<unknown>("/auth/avatar", formData);
 
-      const { data } = await api.patch("/auth/avatar", formdata);
+      const updatedUser = UserSchema.parse(response.data);
 
-      set({ user: data });
+      set({ user: updatedUser });
     } catch (err) {
       console.log(err);
     }

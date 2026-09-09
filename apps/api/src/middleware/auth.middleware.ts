@@ -1,20 +1,26 @@
-import type { Request, Response, NextFunction } from "express";
+import type { NextFunction, Request, Response } from "express";
+
 import { authService } from "../services/auth.service.js";
+import { AppError } from "../lib/app-error.js";
 
 export const authMiddleware = async (
   req: Request,
-  res: Response,
+  _res: Response,
   next: NextFunction,
 ) => {
-  const token = req.headers.authorization?.split(" ")[1];
+  const authorization = req.headers.authorization;
 
-  if (!token) {
-    return res.status(401).json({ error: "Unauthorized" });
+  if (!authorization?.startsWith("Bearer ")) {
+    next(AppError.unauthorized());
+    return;
   }
 
+  const token = authorization.slice("Bearer ".length);
   const userId = await authService.verifyToken(token);
+
   if (!userId) {
-    return res.status(401).json({ error: "Invalid or expired token" });
+    next(AppError.unauthorized("Токен недействителен или истёк"));
+    return;
   }
 
   req.userId = userId;
