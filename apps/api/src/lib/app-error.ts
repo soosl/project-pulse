@@ -32,4 +32,12 @@ export class AppError extends Error {
   static conflict(code: string, message: string) {
     return new AppError(409, code, message);
   }
+
+  static tooManyRequests() {
+    return new AppError(
+      429,
+      "TOO_MANY_REQUESTS",
+      "Слишком много запросов, повторите попытку позже",
+    );
+  }
 }

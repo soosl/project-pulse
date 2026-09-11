@@ -42,7 +42,7 @@ export const createApp = () => {
 
   app.use("/health", healthRouter);
   app.use("/auth", authRouter);
-  app.use("/auth", usersRouter);
+  app.use("/users", usersRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

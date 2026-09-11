@@ -1,9 +1,8 @@
 import { create } from "zustand";
-import { api } from "../lib/api";
+import { api, setUnauthorizedHandler } from "../lib/api";
 import {
   AuthResponseSchema,
   UserSchema,
-  type UpdateUser,
   type User,
 } from "@project-pulse/shared";
 
@@ -15,9 +14,7 @@ interface AuthState {
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   fetchUser: () => Promise<void>;
-  updateUser: (user: UpdateUser) => Promise<void>;
-  updateAvatar: (formData: FormData) => Promise<void>;
-  removeAvatar: () => Promise<void>;
+  updateUser: (formData: FormData) => Promise<User>;
 }
 
 const ACCESS_TOKEN = "accessToken";
@@ -62,7 +59,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: () => {
     localStorage.removeItem(ACCESS_TOKEN);
-    set({ user: null, isAuthenticated: false });
+    set({ user: null, isAuthenticated: false, isLoading: false });
   },
 
   fetchUser: async () => {
@@ -78,7 +75,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     try {
-      const response = await api.get<unknown>("/auth/me");
+      const response = await api.get<unknown>("/users/me");
       const user = UserSchema.parse(response.data);
 
       set({
@@ -97,24 +94,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  updateUser: async (user) => {
-    const response = await api.patch<unknown>("/auth/profile", user);
+  updateUser: async (formData) => {
+    const response = await api.patch<unknown>("/users/me", formData);
     const updatedUser = UserSchema.parse(response.data);
 
     set({ user: updatedUser });
-  },
 
-  updateAvatar: async (formData: FormData) => {
-    const response = await api.patch<unknown>("/auth/avatar", formData);
-    const updatedUser = UserSchema.parse(response.data);
-
-    set({ user: updatedUser });
-  },
-
-  removeAvatar: async () => {
-    const response = await api.delete("/auth/avatar");
-    const updatedUser = UserSchema.parse(response.data);
-
-    set({ user: updatedUser });
+    return updatedUser;
   },
 }));
+
+setUnauthorizedHandler(() => {
+  useAuthStore.getState().logout();
+});

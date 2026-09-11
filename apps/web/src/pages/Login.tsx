@@ -11,7 +11,7 @@ export const Login = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(LoginUserSchema),
   });
@@ -43,7 +43,6 @@ export const Login = () => {
           <span>🔐</span> Вход
         </h1>
 
-        {/* Поле email */}
         <div>
           <label
             htmlFor="email"
@@ -66,7 +65,6 @@ export const Login = () => {
           )}
         </div>
 
-        {/* Поле пароля */}
         <div>
           <label
             htmlFor="password"
@@ -90,14 +88,12 @@ export const Login = () => {
           )}
         </div>
 
-        {/* Общая ошибка от сервера */}
         {error && (
           <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg flex items-center gap-2">
             <span>❌</span> {error}
           </p>
         )}
 
-        {/* Ссылка на регистрацию */}
         <Link
           to="/register"
           className="inline-flex items-center justify-center w-full text-blue-600 hover:text-blue-800 font-medium transition-colors gap-1"
@@ -105,10 +101,10 @@ export const Login = () => {
           <span>←</span> На форму регистрации
         </Link>
 
-        {/* Кнопка отправки */}
         <button
           type="submit"
           className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition duration-200 flex items-center justify-center gap-2"
+          disabled={isSubmitting}
         >
           Войти в аккаунт <span>→</span>
         </button>

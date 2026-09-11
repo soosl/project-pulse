@@ -1,96 +1,52 @@
 import { Router } from "express";
-import { UpdateUserSchema } from "@project-pulse/shared";
+import { UpdateUserSchema, type UpdateUser } from "@project-pulse/shared";
 
-import { prisma } from "../../lib/prisma.js";
+import { AppError } from "../../lib/app-error.js";
 import { authMiddleware } from "../../middleware/auth.middleware.js";
 import { uploadAvatar } from "../../middleware/upload.middleware.js";
-import { avatarService } from "../../services/avatar.service.js";
-import { publicUserSelect, toUserDto } from "./users.mapper.js";
-import { AppError } from "../../lib/app-error.js";
+import { usersService } from "./users.service.js";
 
 export const usersRouter = Router();
 
 usersRouter.use(authMiddleware);
 
 usersRouter.get("/me", async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: req.userId },
-    select: publicUserSelect,
-  });
+  const user = await usersService.getCurrentUser(req.userId);
 
-  if (!user) {
-    throw AppError.notFound("Пользователь не найден");
-  }
-
-  return res.json(toUserDto(user));
+  return res.json(user);
 });
 
-usersRouter.patch("/profile", async (req, res) => {
+usersRouter.patch("/me", uploadAvatar.single("avatar"), async (req, res) => {
   const input = UpdateUserSchema.parse(req.body);
+  const obj: UpdateUser & { avatarFile?: Buffer | null } = {
+    name: input.name,
+    avatarAction: input.avatarAction,
+  };
 
-  const user = await prisma.user.update({
-    where: { id: req.userId },
-    data: {
-      name: input.name,
-    },
-    select: publicUserSelect,
-  });
-
-  return res.json(toUserDto(user));
-});
-
-usersRouter.patch(
-  "/avatar",
-  uploadAvatar.single("avatar"),
-  async (req, res) => {
-    if (!req.file) {
-      throw AppError.badRequest("AVATAR_REQUIRED", "Файл аватара не передан");
+  if (input.avatarAction === "remove") {
+    if (req.file) {
+      throw AppError.badRequest(
+        "INVALID_AVATAR_ACTION",
+        "Произошла ошибка при удалении аватара",
+      );
     }
 
-    const avatar = await avatarService.save(req.userId, req.file.buffer);
-
-    const user = await prisma.user.update({
-      where: {
-        id: req.userId,
-      },
-      data: {
-        avatar,
-      },
-      select: publicUserSelect,
-    });
-
-    return res.json(toUserDto(user));
-  },
-);
-
-usersRouter.delete("/avatar", async (req, res) => {
-  const existingUser = await prisma.user.findUnique({
-    where: {
-      id: req.userId,
-    },
-    select: {
-      id: true,
-      avatar: true,
-    },
-  });
-
-  if (!existingUser) {
-    throw AppError.notFound("Пользователь не найден");
+    obj.avatarFile = null;
+  } else if (input.avatarAction === "update") {
+    if (!req.file) {
+      throw AppError.badRequest(
+        "EMPTY_PROFILE_IMAGE",
+        "Ошибка при передаче изображения",
+      );
+    }
+    obj.avatarFile = req.file.buffer;
+  } else {
+    if (req.file) {
+      throw AppError.badRequest("INVALID_AVATAR_ACTION", "Произошла ошибка");
+    }
   }
 
-  if (existingUser.avatar) {
-    await avatarService.remove(req.userId);
-  }
+  const user = await usersService.updateProfile(req.userId, obj);
 
-  const updatedUser = await prisma.user.update({
-    where: {
-      id: req.userId,
-    },
-    data: {
-      avatar: null,
-    },
-    select: publicUserSelect,
-  });
-
-  return res.json(toUserDto(updatedUser));
+  return res.json(user);
 });
