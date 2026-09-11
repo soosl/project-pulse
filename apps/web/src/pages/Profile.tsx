@@ -2,24 +2,30 @@ import { useForm } from "react-hook-form";
 import { Loader } from "../components/Loader";
 import { useAuthStore } from "../store/auth.store";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { UpdateUserSchema, type UpdateUser } from "@project-pulse/shared";
+import {
+  UpdateUserSchema,
+  type AvatarAction,
+  type UpdateUser,
+} from "@project-pulse/shared";
 import { useNavigate } from "react-router-dom";
-import { useRef, useState, type ChangeEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { getApiError } from "../lib/getApiError";
-import { API_URL } from "../lib/api";
+import { isBlob } from "../lib/isBlob";
+import { getAvatarUrl } from "../lib/getAvatarUrl";
 
 export const Profile = () => {
-  const { user, logout, updateUser, updateAvatar, removeAvatar } =
-    useAuthStore();
+  const { user, logout, updateUser } = useAuthStore();
 
   const navigate = useNavigate();
 
-  const avatarUrl = user?.avatar
-    ? user.avatar.startsWith("http")
-      ? user.avatar
-      : `${API_URL}${user.avatar}`
-    : null;
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const avatarUrl = getAvatarUrl(user?.avatar);
+  // const avatarUrl = user?.avatar
+  //   ? user.avatar.startsWith("http")
+  //     ? user.avatar
+  //     : `${API_URL}${user.avatar}`
+  //   : null;
+  // File - обновляет аватар, null - удаляет, undefined - оставляет как есть
+  const [avatarFile, setAvatarFile] = useState<File | null | undefined>();
   const [avatarPreview, setAvatarPreview] = useState(avatarUrl);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
@@ -29,27 +35,44 @@ export const Profile = () => {
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<UpdateUser>({
     resolver: zodResolver(UpdateUserSchema),
     values: {
       name: user?.name ?? "",
+      avatarAction: "keep",
     },
   });
 
   const handleUpdateUser = async (data: { name: string }) => {
     try {
       setError(null);
+      let avatarAction: AvatarAction = "keep";
+      const formData = new FormData();
 
       if (avatarFile) {
-        const formData = new FormData();
+        avatarAction = "update";
         formData.append("avatar", avatarFile);
-        await updateAvatar(formData);
+      } else if (avatarFile === null) {
+        avatarAction = "remove";
       }
 
-      await updateUser({ name: data.name.trim() });
-    } catch (error) {
-      setError(getApiError(error, "Не удалось обновить данные пользователя"));
+      formData.append("name", data.name);
+      formData.append("avatarAction", avatarAction);
+
+      const updatedUser = await updateUser(formData);
+
+      setAvatarFile(undefined);
+      setAvatarPreview((prevAvatarPreview) => {
+        if (isBlob(prevAvatarPreview)) {
+          URL.revokeObjectURL(prevAvatarPreview);
+        }
+        return updatedUser.avatar ? getAvatarUrl(updatedUser.avatar) : null;
+      });
+    } catch (err) {
+      setError(
+        getApiError(err, "При обновлении данных пользователя произошла ошибка"),
+      );
     }
   };
 
@@ -61,8 +84,13 @@ export const Profile = () => {
   const handleResetForm = () => {
     reset({ name: user?.name ?? "" });
 
-    setAvatarFile(null);
-    setAvatarPreview(avatarUrl);
+    setAvatarFile(undefined);
+    setAvatarPreview((prevAvatarPreview) => {
+      if (isBlob(prevAvatarPreview)) {
+        URL.revokeObjectURL(prevAvatarPreview);
+      }
+      return avatarUrl;
+    });
 
     if (avatarInputRef.current) {
       avatarInputRef.current.value = "";
@@ -70,24 +98,22 @@ export const Profile = () => {
   };
 
   const handleChangeAvatarBtn = () => {
-    avatarInputRef.current?.click();
+    if (avatarInputRef.current) {
+      avatarInputRef.current.value = "";
+      avatarInputRef.current.click();
+    }
   };
 
-  const handleRemoveAvatar = async () => {
-    try {
-      setError(null);
+  const handleRemoveAvatar = () => {
+    setError(null);
 
-      await removeAvatar();
-
-      setAvatarFile(null);
-      setAvatarPreview(null);
-
-      if (avatarInputRef.current) {
-        avatarInputRef.current.value = "";
+    setAvatarFile(null);
+    setAvatarPreview((prevAvatarPreview) => {
+      if (isBlob(prevAvatarPreview)) {
+        URL.revokeObjectURL(prevAvatarPreview);
       }
-    } catch (error) {
-      setError(getApiError(error, "Не удалось удалить аватар"));
-    }
+      return null;
+    });
   };
 
   const handleChangeAvatarInput = (event: ChangeEvent<HTMLInputElement>) => {
@@ -97,13 +123,22 @@ export const Profile = () => {
 
     setAvatarFile(file);
     setAvatarPreview((prevAvatarPreview) => {
-      if (prevAvatarPreview) {
+      if (isBlob(prevAvatarPreview)) {
         URL.revokeObjectURL(prevAvatarPreview);
       }
-
       return URL.createObjectURL(file);
     });
   };
+
+  useEffect(() => {
+    if (!isBlob(avatarPreview)) {
+      return;
+    }
+
+    return () => {
+      URL.revokeObjectURL(avatarPreview);
+    };
+  }, [avatarPreview]);
 
   if (!user) return <Loader />;
 
@@ -230,6 +265,7 @@ export const Profile = () => {
                       type="button"
                       className="inline-flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
                       onClick={handleChangeAvatarBtn}
+                      disabled={isSubmitting}
                     >
                       🖼️ Загрузить
                     </button>
@@ -241,13 +277,16 @@ export const Profile = () => {
                       onChange={handleChangeAvatarInput}
                       ref={avatarInputRef}
                     />
-                    <button
-                      type="button"
-                      className="text-sm text-red-600 hover:text-red-800 font-medium transition"
-                      onClick={handleRemoveAvatar}
-                    >
-                      Удалить
-                    </button>
+                    {avatarPreview && (
+                      <button
+                        type="button"
+                        className="text-sm text-red-600 hover:text-red-800 font-medium transition"
+                        onClick={handleRemoveAvatar}
+                        disabled={isSubmitting}
+                      >
+                        Удалить
+                      </button>
+                    )}
                   </div>
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
@@ -261,12 +300,14 @@ export const Profile = () => {
                 type="button"
                 className="w-full sm:w-auto px-6 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition"
                 onClick={handleResetForm}
+                disabled={isSubmitting}
               >
                 Отмена
               </button>
               <button
                 type="submit"
                 className="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition duration-200 flex items-center justify-center gap-2"
+                disabled={isSubmitting}
               >
                 Сохранить <span>→</span>
               </button>
@@ -284,6 +325,7 @@ export const Profile = () => {
             type="button"
             className="w-full sm:w-auto px-6 py-3 bg-red-50 hover:bg-red-100 text-red-700 font-medium rounded-lg border border-red-200 shadow-sm hover:shadow transition flex items-center justify-center gap-2"
             onClick={handleLogoutBtn}
+            disabled={isSubmitting}
           >
             🚪 Выйти из аккаунта
           </button>

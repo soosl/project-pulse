@@ -11,7 +11,7 @@ export const Register = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(RegisterUserSchema),
   });
@@ -150,6 +150,7 @@ export const Register = () => {
         <button
           type="submit"
           className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition duration-200 flex items-center justify-center gap-2"
+          disabled={isSubmitting}
         >
           Зарегистрироваться <span>→</span>
         </button>

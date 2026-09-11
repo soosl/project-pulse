@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
-import { authService } from "../services/auth.service.js";
 import { AppError } from "../lib/app-error.js";
+import { authService } from "../modules/auth/auth.service.js";
 
 export const authMiddleware = async (
   req: Request,

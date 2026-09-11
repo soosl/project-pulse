@@ -1,16 +1,21 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { AuthResponseSchema } from "@project-pulse/shared";
+import { validateEnv } from "../../lib/env.js";
+import { prisma } from "../../lib/prisma.js";
+import { AppError } from "../../lib/app-error.js";
+import { publicUserSelect, toUserDto } from "../users/users.mapper.js";
+import { z } from "zod";
 
-import { prisma } from "../lib/prisma.js";
-import { validateEnv } from "../lib/env.js";
-import { publicUserSelect, toUserDto } from "../modules/users/users.mapper.js";
-import { AppError } from "../lib/app-error.js";
+const AccessTokenPayloadSchema = z.object({
+  userId: z.string().min(1),
+});
 
 const JWT_SECRET = validateEnv("JWT_SECRET");
 
 const generateAccessToken = (userId: string) => {
   return jwt.sign({ userId }, JWT_SECRET, {
+    algorithm: "HS256",
     expiresIn: "7d",
   });
 };
@@ -83,13 +88,19 @@ export const authService = {
     });
   },
 
-  async verifyToken(token: string) {
+  verifyToken(token: string): string | null {
     try {
-      const decoded = jwt.verify(token, JWT_SECRET) as {
-        userId: string;
-      };
+      const decoded = jwt.verify(token, JWT_SECRET, {
+        algorithms: ["HS256"],
+      });
 
-      return decoded.userId;
+      const result = AccessTokenPayloadSchema.safeParse(decoded);
+
+      if (!result.success) {
+        return null;
+      }
+
+      return result.data.userId;
     } catch {
       return null;
     }

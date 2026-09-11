@@ -4,8 +4,11 @@ const EmailSchema = z.email("Некорректный email");
 
 const NameSchema = z
   .string()
+  .trim()
   .min(2, "Имя должно содержать минимум 2 символа")
   .max(50);
+
+export const AvatarActionSchema = z.enum(["keep", "remove", "update"]);
 
 export const RegisterUserServerSchema = z.object({
   email: EmailSchema,
@@ -27,6 +30,7 @@ export const LoginUserSchema = z.object({
 
 export const UpdateUserSchema = z.object({
   name: NameSchema,
+  avatarAction: AvatarActionSchema,
 });
 
 export const UserSchema = z.object({
@@ -42,9 +46,10 @@ export const AuthResponseSchema = z.object({
   accessToken: z.string(),
 });
 
+export type UpdateUser = z.infer<typeof UpdateUserSchema>;
+export type AvatarAction = z.infer<typeof AvatarActionSchema>;
 export type User = z.infer<typeof UserSchema>;
 export type AuthResponse = z.infer<typeof AuthResponseSchema>;
 export type RegisterUser = z.infer<typeof RegisterUserSchema>;
 export type RegisterUserServer = z.infer<typeof RegisterUserServerSchema>;
 export type LoginUser = z.infer<typeof LoginUserSchema>;
-export type UpdateUser = z.infer<typeof UpdateUserSchema>;

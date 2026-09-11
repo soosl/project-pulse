@@ -1,9 +1,15 @@
-import type { UpdateUser } from "@project-pulse/shared";
-
 import { AppError } from "../../lib/app-error.js";
 import { prisma } from "../../lib/prisma.js";
-import { avatarService } from "../../services/avatar.service.js";
+import { avatarService } from "./avatar.service.js";
 import { publicUserSelect, toUserDto } from "./users.mapper.js";
+
+import type { AvatarAction } from "@project-pulse/shared";
+
+interface UpdateProfileInput {
+  name: string;
+  avatarAction: AvatarAction;
+  avatarFile?: Buffer | null;
+}
 
 export const usersService = {
   async getCurrentUser(userId: string) {
@@ -19,131 +25,74 @@ export const usersService = {
     return toUserDto(user);
   },
 
-  async updateProfile(userId: string, input: UpdateUser) {
-    const user = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        name: input.name,
-      },
-      select: publicUserSelect,
-    });
-
-    return toUserDto(user);
-  },
-
-  async updateAvatar(userId: string, fileBuffer: Buffer) {
+  async updateProfile(userId: string, input: UpdateProfileInput) {
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { avatar: true },
+      select: publicUserSelect,
     });
 
     if (!existingUser) {
       throw AppError.notFound("Пользователь не найден");
     }
 
-    const avatar = await avatarService.save(userId, fileBuffer);
+    let newAvatar: string | null = null;
 
-    let user;
+    if (input.avatarFile) {
+      newAvatar = await avatarService.save(userId, input.avatarFile);
+    }
+
+    const avatarChanged =
+      input.avatarFile !== undefined || input.avatarAction === "remove";
+
+    const data: {
+      name: string;
+      avatar?: string | null;
+    } = {
+      name: input.name,
+    };
+
+    if (input.avatarFile) {
+      data.avatar = newAvatar;
+    } else if (input.avatarAction === "remove") {
+      data.avatar = null;
+    }
+
+    let updatedUser;
 
     try {
-      const result = await prisma.user.updateMany({
-        where: {
-          id: userId,
-          avatar: existingUser.avatar,
-        },
-        data: {
-          avatar,
-        },
-      });
-
-      if (result.count === 0) {
-        throw AppError.conflict(
-          "AVATAR_CHANGED",
-          "Аватар уже был изменён другим запросом",
-        );
-      }
-
-      user = await prisma.user.findUnique({
+      updatedUser = await prisma.user.update({
         where: { id: userId },
+        data,
         select: publicUserSelect,
       });
-
-      if (!user) {
-        throw AppError.notFound("Пользователь не найден");
-      }
     } catch (error) {
-      await avatarService.remove(avatar).catch((cleanupError: unknown) => {
-        console.error("Failed to remove an uncommitted avatar:", cleanupError);
-      });
-
-      throw error;
-    }
-
-    try {
-      await avatarService.remove(existingUser.avatar);
-    } catch (error) {
-      try {
-        const rollback = await prisma.user.updateMany({
-          where: { id: userId, avatar },
-          data: { avatar: existingUser.avatar },
+      // БД не приняла новую ссылку — новый файл никому не нужен.
+      if (newAvatar) {
+        await avatarService.remove(newAvatar).catch((cleanupError: unknown) => {
+          console.error(
+            "Failed to remove an uncommitted avatar:",
+            cleanupError,
+          );
         });
-
-        if (rollback.count > 0) {
-          await avatarService.remove(avatar);
-        }
-      } catch (rollbackError) {
-        console.error("Failed to roll back an avatar update:", rollbackError);
       }
 
       throw error;
     }
 
-    return toUserDto(user);
-  },
-
-  async removeAvatar(userId: string) {
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: publicUserSelect,
-    });
-
-    if (!existingUser) {
-      throw AppError.notFound("Пользователь не найден");
-    }
-
-    if (!existingUser.avatar) {
-      return toUserDto(existingUser);
-    }
-
-    const result = await prisma.user.updateMany({
-      where: { id: userId, avatar: existingUser.avatar },
-      data: {
-        avatar: null,
-      },
-    });
-
-    if (result.count === 0) {
-      throw AppError.conflict(
-        "AVATAR_CHANGED",
-        "Аватар уже был изменён другим запросом",
-      );
-    }
-
-    try {
-      await avatarService.remove(existingUser.avatar);
-    } catch (error) {
-      try {
-        await prisma.user.updateMany({
-          where: { id: userId, avatar: null },
-          data: { avatar: existingUser.avatar },
+    if (
+      avatarChanged &&
+      existingUser.avatar &&
+      existingUser.avatar !== updatedUser.avatar
+    ) {
+      // БД уже хранит корректное состояние.
+      // Ошибка удаления старого файла не должна откатывать профиль.
+      await avatarService
+        .remove(existingUser.avatar)
+        .catch((cleanupError: unknown) => {
+          console.error("Failed to remove an obsolete avatar:", cleanupError);
         });
-      } catch (rollbackError) {
-        console.error("Failed to roll back an avatar deletion:", rollbackError);
-      }
-
-      throw error;
     }
 
-    return toUserDto({ ...existingUser, avatar: null });
+    return toUserDto(updatedUser);
   },
 };

@@ -3,12 +3,24 @@ import {
   LoginUserSchema,
   RegisterUserServerSchema,
 } from "@project-pulse/shared";
-
-import { authService } from "../../services/auth.service.js";
+import { authService } from "./auth.service.js";
+import { rateLimit } from "express-rate-limit";
+import { AppError } from "../../lib/app-error.js";
 
 export const authRouter = Router();
 
-authRouter.post("/register", async (req, res) => {
+const authLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+
+  handler: (_req, _res, next) => {
+    next(AppError.tooManyRequests());
+  },
+});
+
+authRouter.post("/register", authLimiter, async (req, res) => {
   const input = RegisterUserServerSchema.parse(req.body);
 
   const response = await authService.register(
@@ -20,7 +32,7 @@ authRouter.post("/register", async (req, res) => {
   return res.status(201).json(response);
 });
 
-authRouter.post("/login", async (req, res) => {
+authRouter.post("/login", authLimiter, async (req, res) => {
   const input = LoginUserSchema.parse(req.body);
 
   const response = await authService.login(input.email, input.password);
