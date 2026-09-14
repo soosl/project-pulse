@@ -11,6 +11,7 @@ import { authRouter } from "./modules/auth/auth.routes.js";
 import { usersRouter } from "./modules/users/users.routes.js";
 import { notFoundHandler } from "./middleware/not-found.middleware.js";
 import { errorHandler } from "./middleware/error.middleware.js";
+import { projectsRouter } from "./modules/projects/projects.routes.js";
 
 const uploadsDirectory = fileURLToPath(new URL("../uploads", import.meta.url));
 
@@ -43,6 +44,7 @@ export const createApp = () => {
   app.use("/health", healthRouter);
   app.use("/auth", authRouter);
   app.use("/users", usersRouter);
+  app.use("/projects", projectsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

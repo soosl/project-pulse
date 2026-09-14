@@ -40,4 +40,12 @@ export class AppError extends Error {
       "Слишком много запросов, повторите попытку позже",
     );
   }
+
+  static forbidden() {
+    return new AppError(
+      403,
+      "FORBIDDEN",
+      "Недостаточно прав для совершения этой операции",
+    );
+  }
 }

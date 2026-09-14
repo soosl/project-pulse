@@ -19,11 +19,6 @@ export const Profile = () => {
   const navigate = useNavigate();
 
   const avatarUrl = getAvatarUrl(user?.avatar);
-  // const avatarUrl = user?.avatar
-  //   ? user.avatar.startsWith("http")
-  //     ? user.avatar
-  //     : `${API_URL}${user.avatar}`
-  //   : null;
   // File - обновляет аватар, null - удаляет, undefined - оставляет как есть
   const [avatarFile, setAvatarFile] = useState<File | null | undefined>();
   const [avatarPreview, setAvatarPreview] = useState(avatarUrl);

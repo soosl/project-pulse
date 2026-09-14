@@ -11,25 +11,26 @@ const ProjectNameSchema = z
 const ProjectDescriptionSchema = z
   .string()
   .trim()
-  .max(500, "Описание не должно превышать 500 символов")
-  .nullable();
+  .max(500, "Описание не должно превышать 500 символов");
 
 export const CreateProjectSchema = z
   .object({
     name: ProjectNameSchema,
-    description: ProjectDescriptionSchema.optional(),
+    description: ProjectDescriptionSchema.nullable().optional(),
   })
   .strict();
 
 export const UpdateProjectSchema = z
   .object({
     name: ProjectNameSchema.optional(),
-    description: ProjectDescriptionSchema.optional(),
+    description: ProjectDescriptionSchema.nullable().optional(),
   })
   .strict()
   .refine(
     ({ name, description }) => name !== undefined || description !== undefined,
-    "Необходимо передать хотя бы одно изменяемое поле",
+    {
+      message: "Необходимо передать хотя бы одно изменяемое поле",
+    },
   );
 
 export const ProjectParamsSchema = z
