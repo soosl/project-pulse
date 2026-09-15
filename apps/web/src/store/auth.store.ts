@@ -5,6 +5,7 @@ import {
   UserSchema,
   type User,
 } from "@project-pulse/shared";
+import { queryClient } from "../lib/api-client";
 
 interface AuthState {
   user: User | null;
@@ -33,6 +34,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     const data = AuthResponseSchema.parse(response.data);
 
     localStorage.setItem(ACCESS_TOKEN, data.accessToken);
+    queryClient.clear();
 
     set({
       user: data.user,
@@ -50,6 +52,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     const data = AuthResponseSchema.parse(response.data);
 
     localStorage.setItem(ACCESS_TOKEN, data.accessToken);
+    queryClient.clear();
 
     set({
       user: data.user,
@@ -60,6 +63,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem(ACCESS_TOKEN);
     set({ user: null, isAuthenticated: false, isLoading: false });
+    queryClient.clear();
   },
 
   fetchUser: async () => {

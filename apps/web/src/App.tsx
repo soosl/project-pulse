@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { useAuthStore } from "./store/auth.store";
 import { Login } from "./pages/Login";
 import { Register } from "./pages/Register";
@@ -7,14 +7,15 @@ import { Profile } from "./pages/Profile";
 import { Dashboard } from "./pages/Dashboard";
 import { useEffect } from "react";
 import { Loader } from "./components/Loader";
-
-const queryClient = new QueryClient();
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { queryClient } from "./lib/api-client";
+import { Project } from "./pages/Project";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuthStore();
 
   if (isLoading) {
-    return <Loader />;
+    return <Loader label="Проверяем авторизацию..." />;
   }
 
   return isAuthenticated ? children : <Navigate to="/login" replace />;
@@ -29,6 +30,7 @@ export const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ReactQueryDevtools initialIsOpen={false} />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -46,6 +48,14 @@ export const App = () => {
             element={
               <PrivateRoute>
                 <Dashboard />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId"
+            element={
+              <PrivateRoute>
+                <Project />
               </PrivateRoute>
             }
           />
