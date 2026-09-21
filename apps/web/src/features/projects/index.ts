@@ -1,5 +1,10 @@
 export { CreateProjectForm } from "./components/CreateProjectForm";
 export { ProjectsList } from "./components/ProjectsList";
+export { DeleteProjectForm } from "./components/DeleteProjectForm";
+export { UpdateProjectForm } from "./components/UpdateProjectForm";
 export { projectsApi } from "./api/projects.api";
 export { projectKeys } from "./model/project.keys";
 export { useCreateProject } from "./model/use-create-project";
+export { useDeleteProject } from "./model/use-delete-project";
+export { useUpdateProject } from "./model/use-update-project";
+export { useGetProjectById } from "./model/use-get-project-by-id";

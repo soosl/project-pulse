@@ -1,5 +1,7 @@
 import type { ProjectResponse, ProjectRole } from "@project-pulse/shared";
 import { Link } from "react-router-dom";
+import { localeDate } from "../../../lib/formatDate";
+import { createSign } from "../../../lib/createSign";
 
 const roleTagClassnames: Record<ProjectRole, string> = {
   OWNER:
@@ -16,22 +18,11 @@ export const ProjectCard = ({
   updatedAt,
   description,
 }: ProjectResponse) => {
-  const sign = name
-    .split(" ")
-    .map((word) => word.charAt(0))
-    .slice(0, 2);
-
-  const date = new Date(updatedAt).toLocaleDateString("ru-RU", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-
   return (
     <article className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md">
       <div className="flex items-start justify-between gap-4">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100 font-black text-blue-700">
-          {sign}
+          {createSign(name)}
         </div>
         <span className={roleTagClassnames[currentUserRole]}>
           {currentUserRole}
@@ -42,7 +33,7 @@ export const ProjectCard = ({
         {description || "Нет описания"}
       </p>
       <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-xs text-slate-400">
-        <span>Обновлён {date}</span>
+        <span>Обновлён {localeDate(updatedAt)}</span>
 
         <Link
           to={`/projects/${id}`}

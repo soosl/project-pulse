@@ -1,15 +1,17 @@
 type Props = {
   title?: string;
   message: string;
-  onRetry?: () => void;
-  isRetrying?: boolean;
+  handleErrorBtnClick?: () => void;
+  isErrorBtnLoading?: boolean;
+  errorBtnText?: string;
 };
 
 export const ErrorState = ({
   title = "Не удалось загрузить данные",
   message,
-  onRetry,
-  isRetrying = false,
+  handleErrorBtnClick,
+  isErrorBtnLoading,
+  errorBtnText,
 }: Props) => {
   return (
     <section
@@ -49,21 +51,21 @@ export const ErrorState = ({
         {message}
       </p>
 
-      {onRetry && (
+      {handleErrorBtnClick && (
         <button
           type="button"
-          disabled={isRetrying}
-          onClick={onRetry}
+          disabled={isErrorBtnLoading}
+          onClick={handleErrorBtnClick}
           className="mt-6 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isRetrying && (
+          {isErrorBtnLoading && (
             <span
               className="size-4 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600"
               aria-hidden="true"
             />
           )}
 
-          {isRetrying ? "Повторяем..." : "Попробовать снова"}
+          {errorBtnText}
         </button>
       )}
     </section>

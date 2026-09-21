@@ -46,8 +46,9 @@ export const ProjectsList = () => {
           error,
           "Во время загрузки проектов произошла ошибка.",
         )}
-        isRetrying={isRefetching}
-        onRetry={refetch}
+        isErrorBtnLoading={isRefetching}
+        handleErrorBtnClick={refetch}
+        errorBtnText={isRefetching ? "Повторяем..." : "Попробовать снова"}
       />
     );
   }
