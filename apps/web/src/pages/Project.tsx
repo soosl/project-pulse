@@ -12,6 +12,7 @@ import {
 } from "../features/projects";
 import { useAuthStore } from "../store/auth.store";
 import { createSign } from "../lib/createSign";
+import { KanbanBoard } from "../features/tasks";
 
 const roleMap: Record<ProjectRole, string> = {
   ADMIN: "Администратор проекта",
@@ -188,38 +189,11 @@ const ProjectContent = ({ projectId }: { projectId: string }) => {
               </article>
             </div>
           </div>
-
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-blue-600">
-                  Рабочая область
-                </p>
-                <h2 className="mt-1 text-xl font-extrabold tracking-tight">
-                  Задачи проекта
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                disabled
-                className="rounded-xl bg-slate-100 px-4 py-2.5 text-sm font-semibold text-slate-400"
-              >
-                Добавить задачу
-              </button>
-            </div>
-
-            <div className="mt-6 flex min-h-56 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-6 py-10 text-center">
-              <span className="flex size-12 items-center justify-center rounded-2xl bg-blue-50 text-2xl text-blue-600">
-                ✓
-              </span>
-              <h3 className="mt-4 font-bold">Задач пока нет</h3>
-              <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
-                Kanban-доска и управление задачами появятся на следующем этапе
-                разработки.
-              </p>
-            </div>
-          </section>
+          <KanbanBoard
+            currentUserRole={currentUserRole}
+            projectId={projectId}
+            key={projectId}
+          />
         </div>
 
         <aside className="space-y-6 xl:sticky xl:top-6">

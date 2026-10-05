@@ -2,7 +2,6 @@ import {
   ProjectListResponseSchema,
   ProjectResponseSchema,
   type CreateProject,
-  type ProjectResponse,
   type UpdateProject,
 } from "@project-pulse/shared";
 
@@ -15,7 +14,7 @@ type GetProjectsParams = {
 };
 
 export const projectsApi = {
-  async create(input: CreateProject): Promise<ProjectResponse> {
+  async create(input: CreateProject) {
     const response = await api.post("/projects", input);
 
     return ProjectResponseSchema.parse(response.data);
