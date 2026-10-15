@@ -61,7 +61,7 @@ export const UpdateProjectForm = ({
     <form
       onSubmit={handleSubmit(handleSubmitForm)}
       onChange={handleFormChange}
-      className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6"
+      className="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
       noValidate
     >
       <h2 className="text-lg font-extrabold tracking-tight">
@@ -71,7 +71,7 @@ export const UpdateProjectForm = ({
         Измените основные данные рабочего пространства.
       </p>
 
-      <div className="mt-6 space-y-5">
+      <div className="mt-4 space-y-4">
         <div>
           <label
             htmlFor="project-name"
@@ -105,7 +105,7 @@ export const UpdateProjectForm = ({
           <textarea
             {...register("description")}
             id="project-description"
-            rows={5}
+            rows={3}
             maxLength={500}
             aria-invalid={Boolean(errors.description)}
             aria-describedby={
@@ -149,7 +149,7 @@ export const UpdateProjectForm = ({
           type="submit"
           disabled={updateProject.isPending || !isDirty}
           aria-busy={updateProject.isPending}
-          className="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-bold text-white shadow-md shadow-blue-200 transition hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-blue-200 transition hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {updateProject.isPending ? "Сохраняем…" : "Сохранить изменения"}
         </button>

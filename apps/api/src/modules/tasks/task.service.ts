@@ -8,7 +8,11 @@ import {
 import { prisma } from "../../lib/prisma.js";
 import { AppError } from "../../lib/app-error.js";
 import { taskSelect, toTaskDTO } from "./task.mapper.js";
-import { asserProjectAsignee, assertTaskWriteAccess } from "./task.policy.js";
+import {
+  asserProjectAsignee,
+  assertTaskDeleteAccess,
+  assertTaskWriteAccess,
+} from "./task.policy.js";
 
 export const taskService = {
   async getList(userId: string, projectId: string, query: TaskListQuery) {
@@ -226,7 +230,7 @@ export const taskService = {
   },
 
   async delete(userId: string, projectId: string, taskId: string) {
-    await assertTaskWriteAccess(userId, projectId);
+    await assertTaskDeleteAccess(userId, projectId);
 
     await prisma.task.delete({
       where: { id: taskId, projectId },

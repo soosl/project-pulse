@@ -1,28 +1,6 @@
-import type { TaskPriority, TaskResponse } from "@project-pulse/shared";
-
-type PriorityPresentation = {
-  label: string;
-  className: string;
-};
-
-const priorityPresentation = {
-  LOW: {
-    label: "Низкий",
-    className: "bg-slate-100 text-slate-600",
-  },
-  MEDIUM: {
-    label: "Средний",
-    className: "bg-blue-50 text-blue-700",
-  },
-  HIGH: {
-    label: "Высокий",
-    className: "bg-orange-50 text-orange-700",
-  },
-  CRITICAL: {
-    label: "Критический",
-    className: "bg-red-50 text-red-700",
-  },
-} satisfies Record<TaskPriority, PriorityPresentation>;
+import type { TaskResponse } from "@project-pulse/shared";
+import type { ComponentPropsWithRef } from "react";
+import { taskPriorityMeta } from "../constants";
 
 const deadlineFormatter = new Intl.DateTimeFormat("ru-RU", {
   day: "numeric",
@@ -34,6 +12,8 @@ type TaskCardProps = {
   onEdit?: (() => void) | undefined;
   onDelete?: (() => void) | undefined;
   actionsDisabled?: boolean;
+  dragHandleProps?: ComponentPropsWithRef<"button"> | undefined;
+  isDragging?: boolean;
 };
 
 export const TaskCard = ({
@@ -41,28 +21,62 @@ export const TaskCard = ({
   onEdit,
   onDelete,
   actionsDisabled = false,
+  dragHandleProps,
+  isDragging = false,
 }: TaskCardProps) => {
-  const priority = priorityPresentation[task.priority];
+  const priority = taskPriorityMeta[task.priority];
 
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <span
-        className={`rounded-full px-2.5 py-1 text-xs font-bold ${priority.className}`}
-      >
-        {priority.label}
-      </span>
+    <article
+      data-task-id={task.id}
+      className={`rounded-xl border border-slate-200 bg-white p-3 shadow-sm ${
+        isDragging ? "opacity-30" : ""
+      }`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <span
+          className={`rounded-full px-2.5 py-1 text-xs font-bold ${priority.className}`}
+        >
+          {priority.label}
+        </span>
 
-      <h4 className="mt-3 break-words font-bold text-slate-900">
+        {dragHandleProps && (
+          <button
+            aria-label="Перетащить задачу"
+            {...dragHandleProps}
+            type="button"
+            disabled={dragHandleProps.disabled}
+            className="flex size-8 shrink-0 touch-none items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-40 enabled:cursor-grab"
+          >
+            <svg
+              aria-hidden="true"
+              width="16"
+              height="20"
+              viewBox="0 0 16 20"
+              fill="currentColor"
+            >
+              <circle cx="5" cy="4" r="1.5" />
+              <circle cx="11" cy="4" r="1.5" />
+              <circle cx="5" cy="10" r="1.5" />
+              <circle cx="11" cy="10" r="1.5" />
+              <circle cx="5" cy="16" r="1.5" />
+              <circle cx="11" cy="16" r="1.5" />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      <h4 className="mt-2 break-words text-sm font-bold text-slate-900">
         {task.title}
       </h4>
 
       {task.description && (
-        <p className="mt-2 line-clamp-2 text-sm text-slate-500">
+        <p className="mt-1.5 line-clamp-2 break-words text-sm text-slate-500">
           {task.description}
         </p>
       )}
 
-      <footer className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
+      <footer className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-xs text-slate-500">
         <span className="min-w-0 truncate">
           {task.assignee?.name ?? "Без исполнителя"}
         </span>
@@ -74,7 +88,7 @@ export const TaskCard = ({
         )}
       </footer>
       {(onEdit || onDelete) && (
-        <div className="mt-3 flex flex-wrap gap-4">
+        <div className="mt-2.5 flex flex-wrap gap-x-3 gap-y-2">
           {onEdit && (
             <button
               type="button"

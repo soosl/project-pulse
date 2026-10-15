@@ -1,10 +1,7 @@
 import { AppError } from "../../lib/app-error.js";
 import { prisma } from "../../lib/prisma.js";
 
-export const assertTaskWriteAccess = async (
-  userId: string,
-  projectId: string,
-) => {
+const getProjectMembership = async (userId: string, projectId: string) => {
   const membership = await prisma.projectMember.findUnique({
     where: {
       projectId_userId: {
@@ -21,7 +18,23 @@ export const assertTaskWriteAccess = async (
     throw AppError.notFound("Проект не найден");
   }
 
-  if (membership.role === "MEMBER") {
+  return membership;
+};
+
+export const assertTaskWriteAccess = async (
+  userId: string,
+  projectId: string,
+) => {
+  await getProjectMembership(userId, projectId);
+};
+
+export const assertTaskDeleteAccess = async (
+  userId: string,
+  projectId: string,
+) => {
+  const membership = await getProjectMembership(userId, projectId);
+
+  if (membership.role !== "OWNER" && membership.role !== "ADMIN") {
     throw AppError.forbidden();
   }
 };

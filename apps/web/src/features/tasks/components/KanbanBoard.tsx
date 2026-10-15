@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type {
   ProjectRole,
   TaskResponse,
@@ -12,35 +13,9 @@ import { EmptyColumn, KanbanColumn } from "./KanbanColumn";
 import { TaskCard } from "./TaskCard";
 import { EditTaskForm } from "./EditTaskForm";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
-
-type ColumnConfig = {
-  status: TaskStatus;
-  title: string;
-  markerClassName: string;
-};
-
-const columns = [
-  {
-    status: "TODO",
-    title: "К выполнению",
-    markerClassName: "bg-slate-400",
-  },
-  {
-    status: "IN_PROGRESS",
-    title: "В работе",
-    markerClassName: "bg-blue-500",
-  },
-  {
-    status: "REVIEW",
-    title: "На проверке",
-    markerClassName: "bg-violet-500",
-  },
-  {
-    status: "DONE",
-    title: "Готово",
-    markerClassName: "bg-emerald-500",
-  },
-] satisfies ColumnConfig[];
+import { useDragCard } from "../hooks/useDragCard";
+import { taskColumns } from "../constants";
+import { useMutateDragCard } from "../model/use-move-card";
 
 type KanbanBoardProps = {
   projectId: string;
@@ -58,6 +33,9 @@ export const KanbanBoard = ({
   currentUserRole,
 }: KanbanBoardProps) => {
   const [editor, setEditor] = useState<TaskEditor>(null);
+  const boardRef = useRef<HTMLDivElement>(null);
+  const moveInFlight = useRef(false);
+  const mutateDragCard = useMutateDragCard(projectId);
 
   const {
     data,
@@ -73,7 +51,37 @@ export const KanbanBoard = ({
     refetch,
   } = useGetTasks(projectId);
 
-  const canManageTasks =
+  const {
+    preview,
+    handleStartDrag,
+    handleDrag,
+    handleEndDrag,
+    handleCancelDrag,
+  } = useDragCard({
+    boardRef,
+    disabled: editor !== null || mutateDragCard.isPending || isFetchingNextPage,
+    onDragStart: mutateDragCard.reset,
+    onDrop: (move) => {
+      if (moveInFlight.current) return;
+      moveInFlight.current = true;
+
+      mutateDragCard
+        .mutateAsync(move)
+        .catch(() => {
+          // Ошибка уже отображается через mutateDragCard.isError.
+        })
+        .finally(() => {
+          moveInFlight.current = false;
+        });
+    },
+  });
+
+  const actionsDisabled =
+    editor !== null || mutateDragCard.isPending || preview !== null;
+  const listActionsDisabled =
+    mutateDragCard.isPending || preview !== null || isRefetching;
+
+  const canDeleteTasks =
     currentUserRole === "OWNER" || currentUserRole === "ADMIN";
 
   const tasks = data?.pages.flatMap((page) => page.items) ?? [];
@@ -92,12 +100,12 @@ export const KanbanBoard = ({
   const closeEditor = () => setEditor(null);
 
   return (
-    <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <header className="flex flex-col gap-4 border-b border-slate-100 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <section className="min-w-0 rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <header className="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
         <div>
           <p className="text-sm font-semibold text-blue-600">Рабочая область</p>
 
-          <h2 className="mt-1 text-xl font-extrabold tracking-tight">
+          <h2 className="mt-1 text-lg font-extrabold tracking-tight">
             Задачи проекта
           </h2>
 
@@ -106,20 +114,33 @@ export const KanbanBoard = ({
           </p>
         </div>
 
-        {canManageTasks && (
-          <button
-            type="button"
-            disabled={editor !== null}
-            onClick={() => setEditor({ mode: "create", status: "TODO" })}
-            className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            + Новая задача
-          </button>
-        )}
+        <button
+          type="button"
+          disabled={actionsDisabled}
+          onClick={() => setEditor({ mode: "create", status: "TODO" })}
+          className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          + Новая задача
+        </button>
       </header>
 
-      <div className="p-5 sm:p-6">
-        {canManageTasks && editor?.mode === "create" && (
+      <div className="p-3 sm:p-4">
+        {mutateDragCard.isPending && (
+          <p role="status" className="mb-4 text-sm text-slate-500">
+            Сохраняем статус задачи…
+          </p>
+        )}
+
+        {mutateDragCard.isError && (
+          <p
+            role="alert"
+            className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-700"
+          >
+            {getApiError(mutateDragCard.error, "Не удалось перенести задачу")}
+          </p>
+        )}
+
+        {editor?.mode === "create" && (
           <CreateTaskForm
             key={`create:${projectId}:${editor.status}`}
             projectId={projectId}
@@ -129,7 +150,7 @@ export const KanbanBoard = ({
           />
         )}
 
-        {canManageTasks && editor?.mode === "edit" && (
+        {editor?.mode === "edit" && (
           <EditTaskForm
             key={`edit:${editor.task.id}`}
             task={editor.task}
@@ -138,7 +159,7 @@ export const KanbanBoard = ({
           />
         )}
 
-        {canManageTasks && editor?.mode === "delete" && (
+        {canDeleteTasks && editor?.mode === "delete" && (
           <DeleteTaskDialog
             key={`delete:${editor.task.id}`}
             task={editor.task}
@@ -161,8 +182,8 @@ export const KanbanBoard = ({
 
             <button
               type="button"
-              disabled={isRefetching}
-              onClick={() => void refetch()}
+              disabled={listActionsDisabled}
+              onClick={() => refetch()}
               className="mt-4 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {isRefetching ? "Загружаем…" : "Повторить"}
@@ -180,8 +201,8 @@ export const KanbanBoard = ({
 
                 <button
                   type="button"
-                  disabled={isRefetching}
-                  onClick={() => void refetch()}
+                  disabled={listActionsDisabled}
+                  onClick={() => refetch()}
                   className="mt-2 text-sm font-semibold text-red-700 disabled:opacity-60"
                 >
                   {isRefetching ? "Обновляем…" : "Повторить"}
@@ -189,9 +210,12 @@ export const KanbanBoard = ({
               </div>
             )}
 
-            <div className="overflow-x-auto overscroll-x-contain pb-2">
-              <div className="grid grid-flow-col auto-cols-[minmax(290px,1fr)] gap-4">
-                {columns.map(({ status, title, markerClassName }) => {
+            <div className="overflow-x-auto overscroll-x-contain p-1 pb-3">
+              <div
+                ref={boardRef}
+                className="grid grid-flow-col auto-cols-[minmax(260px,1fr)] gap-3"
+              >
+                {taskColumns.map(({ status, title, markerClassName }) => {
                   const columnTasks = tasksByStatus[status];
 
                   return (
@@ -200,6 +224,8 @@ export const KanbanBoard = ({
                       title={title}
                       count={columnTasks.length}
                       markerClassName={markerClassName}
+                      status={status}
+                      isDropTarget={preview?.targetStatus === status}
                     >
                       {columnTasks.length === 0 ? (
                         <EmptyColumn />
@@ -208,17 +234,33 @@ export const KanbanBoard = ({
                           <TaskCard
                             key={task.id}
                             task={task}
-                            actionsDisabled={editor !== null}
-                            onEdit={
-                              canManageTasks
-                                ? () => setEditor({ mode: "edit", task })
-                                : undefined
-                            }
+                            actionsDisabled={actionsDisabled}
+                            isDragging={preview?.task.id === task.id}
+                            onEdit={() => {
+                              if (!actionsDisabled)
+                                setEditor({ mode: "edit", task });
+                            }}
                             onDelete={
-                              canManageTasks
-                                ? () => setEditor({ mode: "delete", task })
+                              canDeleteTasks
+                                ? () => {
+                                    if (!actionsDisabled)
+                                      setEditor({ mode: "delete", task });
+                                  }
                                 : undefined
                             }
+                            dragHandleProps={{
+                              disabled:
+                                editor !== null ||
+                                mutateDragCard.isPending ||
+                                isFetchingNextPage ||
+                                (preview !== null &&
+                                  preview.task.id !== task.id),
+                              onPointerDown: handleStartDrag(task),
+                              onPointerMove: handleDrag,
+                              onPointerUp: handleEndDrag,
+                              onPointerCancel: handleCancelDrag,
+                              onLostPointerCapture: handleCancelDrag,
+                            }}
                           />
                         ))
                       )}
@@ -235,11 +277,11 @@ export const KanbanBoard = ({
             )}
 
             {(hasNextPage || isFetchNextPageError) && (
-              <div className="mt-5 flex justify-center">
+              <div className="mt-3 flex justify-center">
                 <button
                   type="button"
-                  disabled={isFetchingNextPage || isRefetching}
-                  onClick={() => void fetchNextPage()}
+                  disabled={isFetchingNextPage || listActionsDisabled}
+                  onClick={() => fetchNextPage()}
                   className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isFetchingNextPage
@@ -253,6 +295,21 @@ export const KanbanBoard = ({
           </>
         )}
       </div>
+      {preview &&
+        createPortal(
+          <div
+            aria-hidden="true"
+            className="pointer-events-none fixed z-50 select-none cursor-grabbing drop-shadow-xl"
+            style={{
+              left: preview.left,
+              top: preview.top,
+              width: preview.width,
+            }}
+          >
+            <TaskCard task={preview.task} />
+          </div>,
+          document.body,
+        )}
     </section>
   );
 };
