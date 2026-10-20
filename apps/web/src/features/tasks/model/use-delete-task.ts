@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { taskKeys } from "./task.keys";
 import { tasksApi } from "../api/tasks.api";
+import { invalidateTaskQueries } from "./invalidate-task-queries";
 
 export const useDeleteTask = (projectId: string, taskId: string) => {
   const queryClient = useQueryClient();
@@ -14,9 +15,7 @@ export const useDeleteTask = (projectId: string, taskId: string) => {
         exact: true,
       });
 
-      return queryClient.invalidateQueries({
-        queryKey: taskKeys.lists(projectId),
-      });
+      return invalidateTaskQueries(queryClient, projectId);
     },
   });
 };

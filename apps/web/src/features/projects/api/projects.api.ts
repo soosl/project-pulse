@@ -1,6 +1,7 @@
 import {
   ProjectListResponseSchema,
   ProjectResponseSchema,
+  ProjectStatsResponseSchema,
   type CreateProject,
   type UpdateProject,
 } from "@project-pulse/shared";
@@ -43,5 +44,13 @@ export const projectsApi = {
 
   async delete(id: string) {
     return await api.delete(`/projects/${id}`);
+  },
+
+  async getStats(projectId: string, signal: AbortSignal) {
+    const response = await api.get(`/projects/${projectId}/stats`, {
+      signal,
+    });
+
+    return ProjectStatsResponseSchema.parse(response.data);
   },
 };

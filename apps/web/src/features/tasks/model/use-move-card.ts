@@ -7,6 +7,7 @@ import type { TaskListResponse, TaskStatus } from "@project-pulse/shared";
 
 import { tasksApi } from "../api/tasks.api";
 import { taskKeys } from "./task.keys";
+import { invalidateTaskQueries } from "./invalidate-task-queries";
 
 type MoveTaskVariables = {
   taskId: string;
@@ -77,9 +78,6 @@ export const useMutateDragCard = (projectId: string) => {
       );
     },
 
-    onSettled: () =>
-      queryClient.invalidateQueries({
-        queryKey: listsKey,
-      }),
+    onSettled: () => invalidateTaskQueries(queryClient, projectId),
   });
 };

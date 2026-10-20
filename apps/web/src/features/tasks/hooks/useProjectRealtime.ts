@@ -10,6 +10,7 @@ import {
 
 import { API_URL } from "../../../lib/api";
 import { taskKeys } from "../model/task.keys";
+import { invalidateTaskQueries } from "../model/invalidate-task-queries";
 
 type RealtimeStatus = "connecting" | "connected" | "offline" | "error";
 
@@ -47,9 +48,7 @@ export const useProjectRealtime = (projectId: string) => {
 
       needsSync = false;
 
-      void queryClient.invalidateQueries({
-        queryKey: taskKeys.lists(projectId),
-      });
+      return invalidateTaskQueries(queryClient, projectId);
     };
 
     const requestSync = () => {

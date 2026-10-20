@@ -4,4 +4,6 @@ export const projectKeys = {
   list: (search: string) => [...projectKeys.lists(), { search }] as const,
   details: () => [...projectKeys.all, "detail"] as const,
   detail: (projectId: string) => [...projectKeys.details(), projectId] as const,
+  stats: (projectId: string) =>
+    [...projectKeys.detail(projectId), "stats"] as const,
 };

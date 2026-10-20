@@ -7,6 +7,7 @@ import { type ProjectRole } from "@project-pulse/shared";
 import { localeDate, localeTime } from "../lib/formatDate";
 import {
   DeleteProjectForm,
+  ProjectStats,
   UpdateProjectForm,
   useGetProjectById,
 } from "../features/projects";
@@ -154,46 +155,7 @@ const ProjectContent = ({ projectId }: { projectId: string }) => {
       </section>
 
       <div className="min-w-0 space-y-4">
-        <div className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 lg:grid-cols-[180px_minmax(0,1fr)] lg:items-center">
-          <div>
-            <p className="text-sm font-semibold text-blue-600">Обзор</p>
-            <h2 className="mt-1 text-base font-extrabold tracking-tight">
-              Состояние проекта
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            <article className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <span className="block break-words text-xs font-medium text-slate-500 sm:text-sm">
-                Задачи
-              </span>
-              <p className="mt-1 text-xl font-black tracking-tight">0</p>
-              <p className="mt-1 hidden text-xs text-slate-400 sm:block">
-                Пока не добавлены
-              </p>
-            </article>
-
-            <article className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <span className="block break-words text-xs font-medium text-slate-500 sm:text-sm">
-                Участники
-              </span>
-              <p className="mt-1 text-xl font-black tracking-tight">1</p>
-              <p className="mt-1 hidden text-xs text-slate-400 sm:block">
-                Включая владельца
-              </p>
-            </article>
-
-            <article className="min-w-0 rounded-xl border border-slate-200 bg-slate-50 p-3">
-              <span className="block break-words text-xs font-medium text-slate-500 sm:text-sm">
-                Выполнено
-              </span>
-              <p className="mt-1 text-xl font-black tracking-tight">0%</p>
-              <p className="mt-1 hidden text-xs text-slate-400 sm:block">
-                Общий прогресс
-              </p>
-            </article>
-          </div>
-        </div>
+        <ProjectStats projectId={projectId} />
         <KanbanBoard
           currentUserRole={currentUserRole}
           projectId={projectId}

@@ -2,6 +2,7 @@ export { CreateProjectForm } from "./components/CreateProjectForm";
 export { ProjectsList } from "./components/ProjectsList";
 export { DeleteProjectForm } from "./components/DeleteProjectForm";
 export { UpdateProjectForm } from "./components/UpdateProjectForm";
+export { ProjectStats } from "./components/ProjectStats";
 export { projectsApi } from "./api/projects.api";
 export { projectKeys } from "./model/project.keys";
 export { useCreateProject } from "./model/use-create-project";
