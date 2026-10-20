@@ -14,8 +14,9 @@ import { TaskCard } from "./TaskCard";
 import { EditTaskForm } from "./EditTaskForm";
 import { DeleteTaskDialog } from "./DeleteTaskDialog";
 import { useDragCard } from "../hooks/useDragCard";
-import { taskColumns } from "../constants";
+import { realtimeLabels, taskColumns } from "../constants";
 import { useMutateDragCard } from "../model/use-move-card";
+import { useProjectRealtime } from "../hooks/useProjectRealtime";
 
 type KanbanBoardProps = {
   projectId: string;
@@ -36,6 +37,8 @@ export const KanbanBoard = ({
   const boardRef = useRef<HTMLDivElement>(null);
   const moveInFlight = useRef(false);
   const mutateDragCard = useMutateDragCard(projectId);
+
+  const { status: realtimeStatus } = useProjectRealtime(projectId);
 
   const {
     data,
@@ -123,6 +126,15 @@ export const KanbanBoard = ({
       </header>
 
       <div className="p-3 sm:p-4">
+        <p
+          role="status"
+          className={`mb-4 text-sm ${
+            realtimeStatus === "error" ? "text-red-600" : "text-slate-500"
+          }`}
+        >
+          {realtimeLabels[realtimeStatus]}
+        </p>
+
         {mutateDragCard.isPending && (
           <p role="status" className="mb-4 text-sm text-slate-500">
             Сохраняем статус задачи…

@@ -58,3 +58,10 @@ export const taskColumns = TaskStatusSchema.options.map((status) => ({
   title: taskStatusMeta[status].label,
   markerClassName: taskStatusMeta[status].markerClassName,
 }));
+
+export const realtimeLabels = {
+  connecting: "Подключаем обновления…",
+  connected: "Обновления подключены",
+  offline: "Нет соединения — пробуем восстановить",
+  error: "Обновления недоступны — попробуй открыть проект заново",
+} as const;
