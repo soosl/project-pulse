@@ -10,52 +10,66 @@ import {
 import { authMiddleware } from "../../middleware/auth.middleware.js";
 import { taskService } from "./task.service.js";
 
-export const tasksRouter = Router({ mergeParams: true });
+export const createTasksRouter = (
+  onTasksChanged: (projectId: string) => void,
+) => {
+  const router = Router({ mergeParams: true });
 
-tasksRouter.use(authMiddleware);
+  router.use(authMiddleware);
 
-tasksRouter.get("/", async (req, res) => {
-  const { projectId } = TaskCollectionParamsSchema.parse(req.params);
-  const query = TaskListQuerySchema.parse(req.query);
+  router.get("/", async (req, res) => {
+    const { projectId } = TaskCollectionParamsSchema.parse(req.params);
+    const query = TaskListQuerySchema.parse(req.query);
 
-  const tasks = await taskService.getList(req.userId, projectId, query);
+    const tasks = await taskService.getList(req.userId, projectId, query);
 
-  return res.json(tasks);
-});
+    return res.json(tasks);
+  });
 
-tasksRouter.get("/:taskId", async (req, res) => {
-  const { projectId, taskId } = TaskParamsSchema.parse(req.params);
+  router.get("/:taskId", async (req, res) => {
+    const { projectId, taskId } = TaskParamsSchema.parse(req.params);
 
-  const task = await taskService.getById(req.userId, projectId, taskId);
+    const task = await taskService.getById(req.userId, projectId, taskId);
 
-  return res.json(task);
-});
+    return res.json(task);
+  });
 
-tasksRouter.post("/", async (req, res) => {
-  const { projectId } = TaskCollectionParamsSchema.parse(req.params);
-  const input = CreateTaskSchema.parse(req.body);
-  const newTask = await taskService.create(req.userId, projectId, input);
+  router.post("/", async (req, res) => {
+    const { projectId } = TaskCollectionParamsSchema.parse(req.params);
+    const input = CreateTaskSchema.parse(req.body);
 
-  return res.status(201).json(newTask);
-});
+    const newTask = await taskService.create(req.userId, projectId, input);
 
-tasksRouter.patch("/:taskId", async (req, res) => {
-  const { projectId, taskId } = TaskParamsSchema.parse(req.params);
-  const input = UpdateTaskSchema.parse(req.body);
-  const updatedTask = await taskService.update(
-    req.userId,
-    projectId,
-    taskId,
-    input,
-  );
+    onTasksChanged(projectId);
 
-  return res.json(updatedTask);
-});
+    return res.status(201).json(newTask);
+  });
 
-tasksRouter.delete("/:taskId", async (req, res) => {
-  const { projectId, taskId } = TaskParamsSchema.parse(req.params);
+  router.patch("/:taskId", async (req, res) => {
+    const { projectId, taskId } = TaskParamsSchema.parse(req.params);
+    const input = UpdateTaskSchema.parse(req.body);
 
-  await taskService.delete(req.userId, projectId, taskId);
+    const updatedTask = await taskService.update(
+      req.userId,
+      projectId,
+      taskId,
+      input,
+    );
 
-  return res.status(204).send();
-});
+    onTasksChanged(projectId);
+
+    return res.json(updatedTask);
+  });
+
+  router.delete("/:taskId", async (req, res) => {
+    const { projectId, taskId } = TaskParamsSchema.parse(req.params);
+
+    await taskService.delete(req.userId, projectId, taskId);
+
+    onTasksChanged(projectId);
+
+    return res.status(204).send();
+  });
+
+  return router;
+};

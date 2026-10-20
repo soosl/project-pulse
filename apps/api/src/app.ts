@@ -12,11 +12,16 @@ import { usersRouter } from "./modules/users/users.routes.js";
 import { notFoundHandler } from "./middleware/not-found.middleware.js";
 import { errorHandler } from "./middleware/error.middleware.js";
 import { projectsRouter } from "./modules/projects/projects.routes.js";
-import { tasksRouter } from "./modules/tasks/task.routes.js";
+import { createTasksRouter } from "./modules/tasks/task.routes.js";
+// import { tasksRouter } from "./modules/tasks/task.routes.js";
+
+type AppDependencies = {
+  onTasksChanged: (projectId: string) => void;
+};
 
 const uploadsDirectory = fileURLToPath(new URL("../uploads", import.meta.url));
 
-export const createApp = () => {
+export const createApp = ({ onTasksChanged }: AppDependencies) => {
   const app = express();
 
   app.use(helmet());
@@ -46,7 +51,8 @@ export const createApp = () => {
   app.use("/auth", authRouter);
   app.use("/users", usersRouter);
   app.use("/projects", projectsRouter);
-  app.use("/projects/:projectId/tasks", tasksRouter);
+  // app.use("/projects/:projectId/tasks", tasksRouter);
+  app.use("/projects/:projectId/tasks", createTasksRouter(onTasksChanged));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

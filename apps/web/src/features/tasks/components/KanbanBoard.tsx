@@ -63,16 +63,14 @@ export const KanbanBoard = ({
     onDragStart: mutateDragCard.reset,
     onDrop: (move) => {
       if (moveInFlight.current) return;
+
       moveInFlight.current = true;
 
-      mutateDragCard
-        .mutateAsync(move)
-        .catch(() => {
-          // Ошибка уже отображается через mutateDragCard.isError.
-        })
-        .finally(() => {
+      mutateDragCard.mutate(move, {
+        onSettled: () => {
           moveInFlight.current = false;
-        });
+        },
+      });
     },
   });
 
