@@ -59,3 +59,11 @@ projectsRouter.delete("/:projectId", async (req, res) => {
 
   return res.status(204).send();
 });
+
+projectsRouter.get("/:projectId/stats", async (req, res) => {
+  const { projectId } = ProjectParamsSchema.parse(req.params);
+
+  const stats = await projectsService.getStats(req.userId, projectId);
+
+  return res.json(stats);
+});

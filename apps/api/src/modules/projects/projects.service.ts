@@ -1,5 +1,6 @@
 import {
   ProjectListResponseSchema,
+  ProjectStatsResponseSchema,
   type CreateProject,
   type ProjectListQuery,
   type UpdateProject,
@@ -235,6 +236,53 @@ export const projectsService = {
 
     await prisma.project.delete({
       where: { id: projectId },
+    });
+  },
+
+  async getStats(userId: string, projectId: string) {
+    const project = await prisma.project.findUnique({
+      where: {
+        id: projectId,
+        members: {
+          some: { userId },
+        },
+      },
+      select: {
+        _count: {
+          select: {
+            members: true,
+          },
+        },
+      },
+    });
+
+    if (!project) {
+      throw AppError.notFound("Проект не найден");
+    }
+
+    const taskGroups = await prisma.task.groupBy({
+      by: ["status"],
+      where: { projectId },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const totalTasks = taskGroups.reduce(
+      (total, group) => total + group._count._all,
+      0,
+    );
+
+    const completedTasks =
+      taskGroups.find((group) => group.status === "DONE")?._count._all ?? 0;
+
+    const completionPercent =
+      totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+
+    return ProjectStatsResponseSchema.parse({
+      totalTasks,
+      totalMembers: project._count.members,
+      completionPercent,
     });
   },
 };

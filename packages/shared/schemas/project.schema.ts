@@ -66,6 +66,15 @@ export const ProjectListResponseSchema = z
   })
   .strict();
 
+export const ProjectStatsResponseSchema = z
+  .object({
+    totalTasks: z.number().int().nonnegative(),
+    totalMembers: z.number().int().nonnegative(),
+    completionPercent: z.number().int().min(0).max(100),
+  })
+  .strict();
+
+export type ProjectStatsResponse = z.infer<typeof ProjectStatsResponseSchema>;
 export type ProjectRole = z.infer<typeof ProjectRoleSchema>;
 export type CreateProject = z.infer<typeof CreateProjectSchema>;
 export type UpdateProject = z.infer<typeof UpdateProjectSchema>;

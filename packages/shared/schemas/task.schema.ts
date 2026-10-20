@@ -45,12 +45,17 @@ export const UpdateTaskSchema = z
     "Необходимо передать хотя бы одно изменяемое поле",
   );
 
-export const TaskParamsSchema = z
+const EntityIdSchema = z.string().trim().min(1);
+
+export const TaskCollectionParamsSchema = z
   .object({
-    projectId: z.string().min(1),
-    taskId: z.string().min(1),
+    projectId: EntityIdSchema,
   })
   .strict();
+
+export const TaskParamsSchema = TaskCollectionParamsSchema.extend({
+  taskId: EntityIdSchema,
+}).strict();
 
 export const TaskListQuerySchema = z
   .object({
@@ -102,3 +107,4 @@ export type TaskListQuery = z.infer<typeof TaskListQuerySchema>;
 export type TaskAssignee = z.infer<typeof TaskAssigneeSchema>;
 export type TaskResponse = z.infer<typeof TaskResponseSchema>;
 export type TaskListResponse = z.infer<typeof TaskListResponseSchema>;
+export type TaskCollectionParams = z.infer<typeof TaskCollectionParamsSchema>;
